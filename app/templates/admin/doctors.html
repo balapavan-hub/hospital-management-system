@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Doctors - MediCare{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">Manage Specialist Doctors</h3>
+            <p class="text-muted mb-0">Add, edit, or remove hospital specialist credentials</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form action="" method="GET" class="d-flex align-items-center">
+                <input type="text" name="search" class="form-control rounded-pill border-secondary border-opacity-25" placeholder="Search doctors..." value="{{ search }}">
+                <button type="submit" class="btn btn-secondary rounded-pill ms-2">Search</button>
+            </form>
+            <a href="{{ url_for('admin.add_doctor') }}" class="btn btn-primary px-4 rounded-pill shadow-sm"><i class="bi bi-person-plus-fill me-2"></i>Add Doctor</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th class="px-4">Doctor Details</th>
+                    <th>Department</th>
+                    <th>Specialization / Qualification</th>
+                    <th>Consultation Fee</th>
+                    <th>Availability</th>
+                    <th class="text-end px-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in pagination.items %}
+                <tr>
+                    <td class="px-4">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='uploads/profile_pics/' + doc.user.profile_photo) }}" alt="Profile" class="rounded-circle border" width="45" height="45" style="object-fit: cover;">
+                            <div class="ms-3">
+                                <div class="fw-bold">{{ doc.full_name }}</div>
+                                <span class="text-muted small">{{ doc.user.email }} | {{ doc.phone }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-3 px-3 py-2 fs-7">{{ doc.department.name }}</span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold">{{ doc.specialization }}</div>
+                        <span class="text-muted small">{{ doc.qualification }}</span>
+                    </td>
+                    <td>
+                        <span class="fw-bold text-dark">INR {{ doc.consultation_fee }}</span>
+                    </td>
+                    <td>
+                        <span class="badge 
+                            {% if doc.availability_status == 'Available' %}bg-success-subtle text-success
+                            {% elif doc.availability_status == 'On Leave' %}bg-danger-subtle text-danger
+                            {% else %}bg-warning-subtle text-warning
+                            {% endif %} rounded-pill px-3 py-1">
+                            {{ doc.availability_status }}
+                        </span>
+                    </td>
+                    <td class="text-end px-4">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin.edit_doctor', id=doc.id) }}" class="btn btn-outline-primary btn-sm rounded-pill px-3"><i class="bi bi-pencil-square me-1"></i>Edit</a>
+                            
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#deleteModal{{ doc.id }}"><i class="bi bi-trash-fill me-1"></i>Delete</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Delete Confirmation Modal -->
+                <div class="modal fade" id="deleteModal{{ doc.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ doc.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0">
+                            <div class="modal-header bg-danger text-white border-0">
+                                <h5 class="modal-title fw-bold" id="deleteModalLabel{{ doc.id }}">Delete Doctor Account</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-4 text-center">
+                                <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-3 d-block"></i>
+                                <h5 class="fw-bold">Are you sure?</h5>
+                                <p class="text-muted mb-0">You are about to permanently delete the profile and credentials of <strong>{{ doc.full_name }}</strong>. This action cannot be undone.</p>
+                            </div>
+                            <div class="modal-footer border-0 justify-content-center pb-4">
+                                <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-toggle="modal" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{{ url_for('admin.delete_doctor', id=doc.id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-danger px-4 rounded-pill">Delete Account</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">No doctors found matching criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <nav class="d-flex justify-content-center mt-4">
+        <ul class="pagination">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin.doctors', page=pagination.prev_num, search=search) }}">Previous</a>
+            </li>
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.doctors', page=page_num, search=search) }}">{{ page_num }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin.doctors', page=pagination.next_num, search=search) }}">Next</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

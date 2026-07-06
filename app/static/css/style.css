@@ -1,0 +1,313 @@
+/* MediCare Custom Modern stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    /* Light Theme variables */
+    --primary-color: #0d6efd;
+    --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    --secondary-color: #10b981;
+    --secondary-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --accent-color: #f59e0b;
+    --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --border-color: #e2e8f0;
+    
+    --sidebar-bg: #1e293b;
+    --sidebar-text: #f8fafc;
+    --sidebar-active-bg: #334155;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-theme {
+    /* Dark Theme variables */
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --border-color: #334155;
+    
+    --sidebar-bg: #090d16;
+    --sidebar-text: #cbd5e1;
+    --sidebar-active-bg: #1e293b;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    transition: var(--transition-smooth);
+    min-height: 100vh;
+}
+
+/* Typography settings */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* App Layout & Sidebars */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.sidebar {
+    width: 260px;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    flex-shrink: 0;
+    transition: var(--transition-smooth);
+    z-index: 100;
+    box-shadow: var(--shadow-lg);
+}
+
+.sidebar-brand {
+    padding: 1.5rem 1.25rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-menu {
+    padding: 1.5rem 0.75rem;
+    list-style-type: none;
+    margin: 0;
+}
+
+.sidebar-menu-item {
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-menu-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+}
+
+.sidebar-menu-link i {
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.sidebar-menu-link:hover, 
+.sidebar-menu-item.active .sidebar-menu-link {
+    background-color: var(--sidebar-active-bg);
+    color: #ffffff;
+}
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Prevents flexbox children blowout */
+    transition: var(--transition-smooth);
+}
+
+.top-navbar {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.content-body {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+/* Premium Card Designs */
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-smooth);
+    margin-bottom: 1.5rem;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
+}
+
+.stat-card {
+    border-left: 5px solid var(--primary-color);
+}
+
+.stat-card.secondary {
+    border-left: 5px solid var(--secondary-color);
+}
+
+.stat-card.warning {
+    border-left: 5px solid var(--accent-color);
+}
+
+.stat-card.danger {
+    border-left: 5px solid #ef4444;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animated-fade {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Custom Buttons & Badges */
+.btn-primary-gradient {
+    background: var(--primary-gradient);
+    color: #ffffff;
+    border: none;
+    transition: var(--transition-smooth);
+}
+
+.btn-primary-gradient:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+    color: #ffffff;
+}
+
+.btn-secondary-gradient {
+    background: var(--secondary-gradient);
+    color: #ffffff;
+    border: none;
+    transition: var(--transition-smooth);
+}
+
+.btn-secondary-gradient:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+    color: #ffffff;
+}
+
+.status-badge {
+    padding: 0.4em 0.8em;
+    border-radius: 50rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Responsive sidebars for Mobile */
+@media (max-width: 991.98px) {
+    .sidebar {
+        margin-left: -260px;
+        position: fixed;
+        height: 100vh;
+    }
+    
+    .sidebar.show {
+        margin-left: 0;
+    }
+    
+    .top-navbar-toggle {
+        display: block !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .top-navbar-toggle {
+        display: none !important;
+    }
+}
+
+/* Glassmorphism for hero banner */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #1f2937;
+}
+
+body.dark-theme .glass-panel {
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+}
+
+/* Custom prescription and medicine inputs styling */
+.med-row {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: var(--transition-smooth);
+}
+
+/* Notification layout */
+.notification-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 0.25em 0.4em;
+    border-radius: 50%;
+    font-size: 0.65rem;
+}
+
+/* Timeline component */
+.timeline {
+    border-left: 3px solid var(--border-color);
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.timeline-item::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+    position: absolute;
+    left: -23px;
+    top: 5px;
+}
+
+/* Dark mode theme toggler styling */
+.theme-toggle-btn {
+    cursor: pointer;
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    transition: var(--transition-smooth);
+}
+
+.theme-toggle-btn:hover {
+    color: var(--text-primary);
+}

@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - MediCare{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">Welcome back, {{ patient.full_name }}!</h2>
+        <p class="text-muted mb-0">View your appointments, medical history, prescriptions, and billing receipts</p>
+    </div>
+    <a href="{{ url_for('patient.book_appointment') }}" class="btn btn-primary-gradient px-4 py-2 rounded-pill shadow-sm"><i class="bi bi-calendar-plus-fill me-2"></i>Book Appointment</a>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Patient Profile Summary -->
+    <div class="col-lg-4 animate-fade">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+            <img src="{{ url_for('static', filename='uploads/profile_pics/' + current_user.profile_photo) }}" alt="Profile" class="rounded-circle border border-primary border-3 mx-auto mb-3" width="120" height="120" style="object-fit: cover;">
+            <h4 class="fw-bold mb-1">{{ patient.full_name }}</h4>
+            <div class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill mb-4">Patient Profile</div>
+            
+            <div class="border-top pt-3 text-start small">
+                <div class="mb-2"><strong>Patient ID:</strong> <span class="text-muted">#PT-{{ "%04d"|format(patient.id) }}</span></div>
+                <div class="mb-2"><strong>Age / Gender:</strong> <span class="text-muted">{{ patient.age }} Y / {{ patient.gender }}</span></div>
+                <div class="mb-2"><strong>Blood Group:</strong> <span class="badge bg-danger bg-opacity-10 text-danger">{{ patient.blood_group or 'N/A' }}</span></div>
+                <div class="mb-2"><strong>Phone Number:</strong> <span class="text-muted">{{ patient.phone }}</span></div>
+                <div class="mb-3"><strong>Email Address:</strong> <span class="text-muted">{{ current_user.email }}</span></div>
+                <div class="mb-3"><strong>Home Address:</strong> <p class="text-muted mb-0">{{ patient.address or 'No address provided.' }}</p></div>
+                <div class="mb-0"><strong>Pre-existing Conditions:</strong> <p class="text-danger-emphasis bg-danger-subtle p-2 rounded-3 mt-1 mb-0">{{ patient.medical_history or 'No medical history reported.' }}</p></div>
+            </div>
+            
+            <div class="mt-4">
+                <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary btn-sm rounded-pill w-100 py-2"><i class="bi bi-pencil-square me-2"></i>Edit Profile</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Medical History Tabs -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <ul class="nav nav-tabs mb-4" id="patientTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab" aria-controls="upcoming" aria-selected="true">
+                        Upcoming Visits ({{ upcoming_appointments | length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
+                        Past Visits
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="prescriptions-tab" data-bs-toggle="tab" data-bs-target="#prescriptions" type="button" role="tab" aria-controls="prescriptions" aria-selected="false">
+                        Prescriptions ({{ prescriptions | length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="bills-tab" data-bs-toggle="tab" data-bs-target="#bills" type="button" role="tab" aria-controls="bills" aria-selected="false">
+                        Bills & Invoices
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="patientTabContent">
+                <!-- Upcoming Appointments -->
+                <div class="tab-pane fade show active" id="upcoming" role="tabpanel" aria-labelledby="upcoming-tab">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th>Doctor Name</th>
+                                    <th>Department</th>
+                                    <th>Date</th>
+                                    <th>Time Slot</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in upcoming_appointments %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ appt.doctor.full_name }}</div>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-3 px-2 py-1">{{ appt.doctor.department.name }}</span></td>
+                                    <td class="fw-bold">{{ appt.appointment_date.strftime('%d-%b-%Y') }}</td>
+                                    <td>{{ appt.time_slot }}</td>
+                                    <td>
+                                        <span class="badge status-badge 
+                                            {% if appt.status == 'Confirmed' %}bg-success-subtle text-success
+                                            {% else %}bg-warning-subtle text-warning
+                                            {% endif %}">
+                                            {{ appt.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-1">
+                                            <a href="{{ url_for('patient.reschedule_appointment', id=appt.id) }}" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-clock-history"></i> Reschedule</a>
+                                            <form action="{{ url_for('patient.cancel_appointment', id=appt.id) }}" method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill"><i class="bi bi-x-circle"></i> Cancel</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No upcoming appointments scheduled.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Past Visits -->
+                <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th>Doctor Name</th>
+                                    <th>Department</th>
+                                    <th>Date</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in past_appointments %}
+                                <tr>
+                                    <td><strong>{{ appt.doctor.full_name }}</strong></td>
+                                    <td>{{ appt.doctor.department.name }}</td>
+                                    <td>{{ appt.appointment_date.strftime('%d-%b-%Y') }}</td>
+                                    <td>{{ appt.reason or 'Checkup' }}</td>
+                                    <td>
+                                        <span class="badge status-badge 
+                                            {% if appt.status == 'Completed' %}bg-primary-subtle text-primary
+                                            {% else %}bg-danger-subtle text-danger
+                                            {% endif %}">
+                                            {{ appt.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">No past visits recorded.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Prescriptions -->
+                <div class="tab-pane fade" id="prescriptions" role="tabpanel" aria-labelledby="prescriptions-tab">
+                    {% for pres in prescriptions %}
+                    <div class="border rounded-4 p-3 mb-3 bg-light position-relative">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                            <div>
+                                <span class="fw-bold text-primary">Consultant: {{ pres.doctor.full_name }}</span>
+                                <span class="text-muted small ms-2">Date: {{ pres.created_at.strftime('%d-%b-%Y') }}</span>
+                            </div>
+                            <a href="{{ url_for('patient.download_prescription_pdf', id=pres.id) }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-download me-1"></i>Download Prescription PDF</a>
+                        </div>
+                        <div class="small mb-1"><strong>Symptoms:</strong> <span class="text-muted">{{ pres.symptoms }}</span></div>
+                        <div class="small mb-2"><strong>Diagnosis:</strong> <span class="text-muted">{{ pres.diagnosis }}</span></div>
+                        <div class="small">
+                            <strong>Medicines Prescribed:</strong>
+                            <ul class="mb-0 ps-3 mt-1 text-muted">
+                                {% for med in pres.medicines %}
+                                    <li>
+                                        {{ med.medicine_name }} - {{ med.duration_days }} days 
+                                        (Dosage: 
+                                        {% if med.dosage_morning %}Morning {% endif %}
+                                        {% if med.dosage_afternoon %}Afternoon {% endif %}
+                                        {% if med.dosage_night %}Night{% endif %})
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">No prescriptions found.</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Bills -->
+                <div class="tab-pane fade" id="bills" role="tabpanel" aria-labelledby="bills-tab">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th>Bill ID</th>
+                                    <th>Consultation</th>
+                                    <th>Medicines / Lab</th>
+                                    <th>GST / Disc</th>
+                                    <th>Grand Total</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bill in bills %}
+                                <tr>
+                                    <td class="fw-bold">#MC-{{ "%06d"|format(bill.id) }}</td>
+                                    <td>INR {{ bill.consultation_fee }}</td>
+                                    <td>Meds: INR {{ bill.medicine_charges }}<br/>Lab: INR {{ bill.lab_charges }}</td>
+                                    <td>GST: INR {{ bill.gst }}<br/><span class="text-danger">- INR {{ bill.discount }}</span></td>
+                                    <td class="fw-bold text-dark">INR {{ bill.grand_total }}</td>
+                                    <td>
+                                        <span class="badge {% if bill.status == 'Paid' %}bg-success{% else %}bg-warning{% endif %}">{{ bill.status }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('patient.download_bill_pdf', id=bill.id) }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-file-earmark-pdf"></i> PDF Invoice</a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">No billing history found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

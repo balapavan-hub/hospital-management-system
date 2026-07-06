@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}My Lab Tests{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-clipboard2-pulse-fill text-primary me-2"></i>My Lab Tests</h2>
+        <p class="text-muted mb-0">View your lab test orders and results</p>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<ul class="nav nav-tabs mb-4" id="labTestTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">Pending ({{ pending_tests | length }})</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">Completed ({{ completed_tests | length }})</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="labTestTabContent">
+    <!-- Pending Tests -->
+    <div class="tab-pane fade show active" id="pending" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th>Test ID</th>
+                            <th>Test Name</th>
+                            <th>Category</th>
+                            <th>Ordered By</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in pending_tests %}
+                        <tr>
+                            <td class="fw-bold">#LT-{{ "%05d"|format(test.id) }}</td>
+                            <td class="fw-bold">{{ test.test_name }}</td>
+                            <td><span class="badge bg-info-subtle text-info-emphasis rounded-pill">{{ test.test_category }}</span></td>
+                            <td>{{ test.doctor.full_name if test.doctor else 'N/A' }}</td>
+                            <td>{{ test.test_date.strftime('%d-%b-%Y') }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if test.status == 'Ordered' %}bg-warning-subtle text-warning
+                                    {% elif test.status == 'Sample Collected' %}bg-info-subtle text-info
+                                    {% elif test.status == 'In Progress' %}bg-primary-subtle text-primary
+                                    {% endif %} rounded-pill">{{ test.status }}</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No pending lab tests.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Tests -->
+    <div class="tab-pane fade" id="completed" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th>Test ID</th>
+                            <th>Test Name</th>
+                            <th>Category</th>
+                            <th>Result</th>
+                            <th>Result Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in completed_tests %}
+                        <tr>
+                            <td class="fw-bold">#LT-{{ "%05d"|format(test.id) }}</td>
+                            <td class="fw-bold">{{ test.test_name }}</td>
+                            <td><span class="badge bg-info-subtle text-info-emphasis rounded-pill">{{ test.test_category }}</span></td>
+                            <td>
+                                <span class="badge 
+                                    {% if test.result_status == 'Normal' %}bg-success-subtle text-success
+                                    {% elif test.result_status == 'Abnormal' %}bg-warning-subtle text-warning
+                                    {% elif test.result_status == 'Critical' %}bg-danger-subtle text-danger
+                                    {% endif %} rounded-pill">{{ test.result_status }}</span>
+                            </td>
+                            <td>{{ test.result_date.strftime('%d-%b-%Y') if test.result_date else 'N/A' }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('patient.view_lab_result', test_id=test.id) }}" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-eye me-1"></i>View Results</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No completed lab tests.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

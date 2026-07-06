@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Search Patients - MediCare{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 p-4 animate-fade">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">Patient Directories Search</h3>
+            <p class="text-muted mb-0">Locate patient registration files for appointments and billing</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form action="" method="GET" class="d-flex align-items-center">
+                <input type="text" name="search" class="form-control rounded-pill border-secondary border-opacity-25" placeholder="Search name/phone..." value="{{ search }}">
+                <button type="submit" class="btn btn-secondary rounded-pill ms-2">Search</button>
+            </form>
+            <a href="{{ url_for('receptionist.register_patient') }}" class="btn btn-primary px-4 rounded-pill shadow-sm"><i class="bi bi-person-plus-fill me-2"></i>Register New Patient</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th class="px-4">Patient details</th>
+                    <th>Age / Gender</th>
+                    <th>Phone Number</th>
+                    <th>Blood Group</th>
+                    <th>Registered Date</th>
+                    <th class="text-end px-4">Quick Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in patients %}
+                <tr>
+                    <td class="px-4">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='uploads/profile_pics/' + p.user.profile_photo) }}" alt="Profile" class="rounded-circle border" width="45" height="45" style="object-fit: cover;">
+                            <div class="ms-3">
+                                <div class="fw-bold">{{ p.full_name }}</div>
+                                <span class="text-muted small">{{ p.user.email }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ p.age }} Y / {{ p.gender }}</td>
+                    <td>{{ p.phone }}</td>
+                    <td><span class="badge bg-danger bg-opacity-10 text-danger">{{ p.blood_group or 'Not set' }}</span></td>
+                    <td>{{ p.created_at.strftime('%d-%b-%Y') }}</td>
+                    <td class="text-end px-4">
+                        <a href="{{ url_for('receptionist.book_appointment') }}?patient_id={{ p.id }}" class="btn btn-primary btn-sm rounded-pill px-3 me-1"><i class="bi bi-calendar-plus"></i> Book Appt</a>
+                        <a href="{{ url_for('receptionist.generate_bill') }}?patient_id={{ p.id }}" class="btn btn-warning btn-sm text-white rounded-pill px-3"><i class="bi bi-cash-stack"></i> Bill</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">No patients found. Click "Register New Patient" to add one.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

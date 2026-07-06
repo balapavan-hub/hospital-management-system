@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Consultation Fees - MediCare{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <h3 class="fw-bold mb-1">Consultation Invoices</h3>
+    <p class="text-muted mb-4">Overview of patient consultation fees and payment statuses associated with you</p>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th class="px-4">Invoice ID</th>
+                    <th>Patient Name</th>
+                    <th>Date</th>
+                    <th>Consultation Fee</th>
+                    <th>Status</th>
+                    <th class="text-end px-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bill in bills %}
+                <tr>
+                    <td class="px-4 fw-bold">#MC-{{ "%06d"|format(bill.id) }}</td>
+                    <td>
+                        <div class="fw-bold">{{ bill.patient.full_name }}</div>
+                        <span class="text-muted small">{{ bill.patient.phone }}</span>
+                    </td>
+                    <td>{{ bill.created_at.strftime('%d-%b-%Y') }}</td>
+                    <td class="fw-bold text-dark">INR {{ bill.consultation_fee }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if bill.status == 'Paid' %}bg-success-subtle text-success
+                            {% else %}bg-warning-subtle text-warning
+                            {% endif %} rounded-pill px-3 py-1">
+                            {{ bill.status }}
+                        </span>
+                    </td>
+                    <td class="text-end px-4">
+                        <a href="{{ url_for('doctor.download_prescription_pdf', id=bill.appointment.prescription.id if (bill.appointment and bill.appointment.prescription) else 0) }}" class="btn btn-outline-secondary btn-sm rounded-pill {% if not (bill.appointment and bill.appointment.prescription) %}disabled{% endif %}"><i class="bi bi-prescription me-1"></i>Prescription</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">No billing records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

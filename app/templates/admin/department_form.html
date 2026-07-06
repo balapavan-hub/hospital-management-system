@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - MediCare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h3 class="fw-bold mb-4 text-primary border-bottom pb-3"><i class="bi bi-building-fill me-2"></i>{{ title }}</h3>
+            
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label font-weight-bold">Department Name</label>
+                    {{ form.name(class="form-control rounded-3", placeholder="e.g. Cardiology", id="name") }}
+                    {% if form.name.errors %}
+                        <div class="text-danger small mt-1">{% for e in form.name.errors %}{{ e }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="icon_name" class="form-label font-weight-bold">Bootstrap Icon Class (e.g. bi-heart-pulse-fill)</label>
+                    {{ form.icon_name(class="form-control rounded-3", placeholder="bi-hospital", id="icon_name") }}
+                    <span class="text-muted small">Choose class from <a href="https://icons.getbootstrap.com/" target="_blank">Bootstrap Icons</a> website.</span>
+                    {% if form.icon_name.errors %}
+                        <div class="text-danger small mt-1">{% for e in form.icon_name.errors %}{{ e }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label font-weight-bold">Description</label>
+                    {{ form.description(class="form-control rounded-3", rows="4", placeholder="Explain department specialties...", id="description") }}
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end border-top pt-4">
+                    <a href="{{ url_for('admin.departments') }}" class="btn btn-light px-4 rounded-pill">Cancel</a>
+                    {{ form.submit(class="btn btn-primary px-4 rounded-pill shadow-sm") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard - MediCare{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Doctor Portal Dashboard</h2>
+        <p class="text-muted mb-0">Manage today's clinical appointments and patient check-ins</p>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card border-0 p-4 h-100" style="border-left-color: #0d6efd;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted font-weight-bold mb-1">Today's Appointments</h6>
+                    <h2 class="fw-extrabold mb-0">{{ stats.today_count }}</h2>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary rounded-4 p-3 fs-3">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card stat-card border-0 p-4 h-100" style="border-left-color: #f59e0b;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted font-weight-bold mb-1">Upcoming Appointments</h6>
+                    <h2 class="fw-extrabold mb-0">{{ stats.upcoming_count }}</h2>
+                </div>
+                <div class="bg-warning bg-opacity-10 text-warning rounded-4 p-3 fs-3">
+                    <i class="bi bi-calendar-week-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card stat-card border-0 p-4 h-100" style="border-left-color: #10b981;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted font-weight-bold mb-1">Completed Consultations</h6>
+                    <h2 class="fw-extrabold mb-0">{{ stats.completed_count }}</h2>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success rounded-4 p-3 fs-3">
+                    <i class="bi bi-journal-medical"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Appointments -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <h4 class="fw-bold mb-3"><i class="bi bi-calendar-event me-2 text-primary"></i>Today's Consultations</h4>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th class="px-4">Time Slot</th>
+                    <th>Patient Name</th>
+                    <th>Reason / Symptoms</th>
+                    <th>Status</th>
+                    <th class="text-end px-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in today_appointments %}
+                <tr>
+                    <td class="px-4 fw-semibold text-primary"><i class="bi bi-clock me-1"></i>{{ appt.time_slot }}</td>
+                    <td>
+                        <div class="fw-bold">{{ appt.patient.full_name }}</div>
+                        <span class="text-muted small">{{ appt.patient.phone }} | Gender: {{ appt.patient.gender }} | Age: {{ appt.patient.age }}</span>
+                    </td>
+                    <td>{{ appt.reason or 'General checkup' }}</td>
+                    <td>
+                        <span class="badge status-badge 
+                            {% if appt.status == 'Confirmed' %}bg-success-subtle text-success
+                            {% elif appt.status == 'Pending' %}bg-warning-subtle text-warning
+                            {% elif appt.status == 'Completed' %}bg-primary-subtle text-primary
+                            {% endif %}">
+                            {{ appt.status }}
+                        </span>
+                    </td>
+                    <td class="text-end px-4">
+                        {% if appt.status == 'Confirmed' or appt.status == 'Pending' %}
+                            <a href="{{ url_for('doctor.write_prescription', appointment_id=appt.id) }}" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-prescription me-1"></i>Consult & Rx</a>
+                        {% endif %}
+                        <a href="{{ url_for('doctor.patient_details', patient_id=appt.patient_id) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 ms-1">History</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-5">No appointments scheduled for today.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Upcoming Appointments -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 p-4">
+            <h5 class="fw-bold mb-3">Upcoming Calendar</h5>
+            <ul class="list-group list-group-flush">
+                {% for appt in upcoming_appointments %}
+                <li class="list-group-item py-3 px-0 border-0 border-bottom">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold">{{ appt.patient.full_name }}</div>
+                            <span class="text-muted small">Date: {{ appt.appointment_date.strftime('%d-%b-%Y') }} | Time: {{ appt.time_slot }}</span>
+                        </div>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill">{{ appt.status }}</span>
+                    </div>
+                </li>
+                {% else %}
+                <li class="list-group-item text-center text-muted py-4 border-0">No upcoming appointments scheduled.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Completed Consultations -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 p-4">
+            <h5 class="fw-bold mb-3">Recent Completed Visits</h5>
+            <ul class="list-group list-group-flush">
+                {% for appt in completed_appointments %}
+                <li class="list-group-item py-3 px-0 border-0 border-bottom">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold">{{ appt.patient.full_name }}</div>
+                            <span class="text-muted small">Date: {{ appt.appointment_date.strftime('%d-%b-%Y') }}</span>
+                        </div>
+                        <div>
+                            {% if appt.prescription %}
+                                <a href="{{ url_for('doctor.download_prescription_pdf', id=appt.prescription.id) }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-file-earmark-pdf"></i> Prescription</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% else %}
+                <li class="list-group-item text-center text-muted py-4 border-0">No completed consultations recorded.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

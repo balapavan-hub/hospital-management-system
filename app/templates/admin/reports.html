@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Export Reports - MediCare{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <h3 class="fw-bold mb-1">Export Analytics Reports</h3>
+    <p class="text-muted mb-4">Select a report module and choose your preferred file format for export (Excel/CSV)</p>
+
+    <div class="row g-4">
+        <!-- Patients Report -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border text-center p-4 rounded-4 shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle mb-3 mx-auto" style="width: 50px; height: 50px;">
+                    <i class="bi bi-people-fill fs-4"></i>
+                </div>
+                <h5 class="fw-bold">Patients Directory</h5>
+                <p class="text-muted small mb-4">Complete list of registered patients, age, gender, blood group, phone and DOB.</p>
+                <div class="mt-auto d-grid gap-2">
+                    <a href="{{ url_for('admin.export_reports', report_type='patients', format_type='excel') }}" class="btn btn-primary btn-sm rounded-pill"><i class="bi bi-file-earmark-excel-fill me-1"></i>Export to Excel</a>
+                    <a href="{{ url_for('admin.export_reports', report_type='patients', format_type='csv') }}" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-file-earmark-spreadsheet-fill me-1"></i>Export to CSV</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments Report -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border text-center p-4 rounded-4 shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center bg-success-subtle text-success rounded-circle mb-3 mx-auto" style="width: 50px; height: 50px;">
+                    <i class="bi bi-calendar-event-fill fs-4"></i>
+                </div>
+                <h5 class="fw-bold">Appointments Register</h5>
+                <p class="text-muted small mb-4">History of all doctor visits, patient names, dates, timeslots, and current statuses.</p>
+                <div class="mt-auto d-grid gap-2">
+                    <a href="{{ url_for('admin.export_reports', report_type='appointments', format_type='excel') }}" class="btn btn-success btn-sm rounded-pill"><i class="bi bi-file-earmark-excel-fill me-1"></i>Export to Excel</a>
+                    <a href="{{ url_for('admin.export_reports', report_type='appointments', format_type='csv') }}" class="btn btn-outline-success btn-sm rounded-pill"><i class="bi bi-file-earmark-spreadsheet-fill me-1"></i>Export to CSV</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue Report -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border text-center p-4 rounded-4 shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center bg-warning-subtle text-warning rounded-circle mb-3 mx-auto" style="width: 50px; height: 50px;">
+                    <i class="bi bi-cash-stack fs-4"></i>
+                </div>
+                <h5 class="fw-bold">Revenue Ledger</h5>
+                <p class="text-muted small mb-4">Paid invoices listing, consultation, medicine, lab charges, GST tax details and total revenue.</p>
+                <div class="mt-auto d-grid gap-2">
+                    <a href="{{ url_for('admin.export_reports', report_type='revenue', format_type='excel') }}" class="btn btn-warning btn-sm rounded-pill text-white"><i class="bi bi-file-earmark-excel-fill me-1"></i>Export to Excel</a>
+                    <a href="{{ url_for('admin.export_reports', report_type='revenue', format_type='csv') }}" class="btn btn-outline-warning btn-sm rounded-pill"><i class="bi bi-file-earmark-spreadsheet-fill me-1"></i>Export to CSV</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doctors Report -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border text-center p-4 rounded-4 shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center bg-info-subtle text-info rounded-circle mb-3 mx-auto" style="width: 50px; height: 50px;">
+                    <i class="bi bi-person-pulse-fill fs-4"></i>
+                </div>
+                <h5 class="fw-bold">Doctors Performance</h5>
+                <p class="text-muted small mb-4">List of hospital doctors, departments, qualification, fee, and total completed consultations.</p>
+                <div class="mt-auto d-grid gap-2">
+                    <a href="{{ url_for('admin.export_reports', report_type='doctors', format_type='excel') }}" class="btn btn-info btn-sm rounded-pill text-white"><i class="bi bi-file-earmark-excel-fill me-1"></i>Export to Excel</a>
+                    <a href="{{ url_for('admin.export_reports', report_type='doctors', format_type='csv') }}" class="btn btn-outline-info btn-sm rounded-pill"><i class="bi bi-file-earmark-spreadsheet-fill me-1"></i>Export to CSV</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

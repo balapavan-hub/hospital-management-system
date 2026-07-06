@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - MediCare{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <h3 class="fw-bold mb-1">System Security Audit Logs</h3>
+    <p class="text-muted mb-4">Historical record of user login actions, profile changes, and administrative modifications</p>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th class="px-4">Log ID</th>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Activity / Action Logged</th>
+                    <th>Client IP Address</th>
+                    <th class="px-4">Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in pagination.items %}
+                <tr>
+                    <td class="px-4 text-muted small">#AL-{{ "%05d"|format(log.id) }}</td>
+                    <td>
+                        <div class="fw-semibold">{{ log.user.full_name if log.user else 'System Guest' }}</div>
+                        <span class="text-muted small">{{ log.user.email if log.user else '' }}</span>
+                    </td>
+                    <td>
+                        {% if log.user %}
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-2 py-1 small">{{ log.user.role }}</span>
+                        {% else %}
+                            <span class="badge bg-light text-muted rounded-pill px-2 py-1 small">System</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-semibold text-dark">{{ log.action }}</td>
+                    <td><code>{{ log.ip_address or '127.0.0.1' }}</code></td>
+                    <td class="px-4 text-muted small">{{ log.created_at.strftime('%d-%b-%Y %I:%M:%S %p') }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">No security audit logs found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paging -->
+    {% if pagination.pages > 1 %}
+    <nav class="d-flex justify-content-center mt-4">
+        <ul class="pagination">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin.audit_logs', page=pagination.prev_num) }}">Previous</a>
+            </li>
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.audit_logs', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin.audit_logs', page=pagination.next_num) }}">Next</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

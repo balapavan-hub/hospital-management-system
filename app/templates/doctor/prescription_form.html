@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Write Prescription - MediCare{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('doctor.patient_details', patient_id=appointment.patient_id) }}" class="btn btn-link p-0 text-decoration-none text-muted"><i class="bi bi-arrow-left me-2"></i>Cancel & Back</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                <h3 class="fw-bold mb-0 text-primary"><i class="bi bi-prescription me-2"></i>Write Prescription</h3>
+                <div class="text-muted text-end small">
+                    <div>Patient: <strong>{{ appointment.patient.full_name }}</strong></div>
+                    <div>Visit Date: <strong>{{ appointment.appointment_date.strftime('%d-%b-%Y') }}</strong></div>
+                </div>
+            </div>
+
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+
+                <!-- Symptoms & Diagnosis -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="symptoms" class="form-label font-weight-bold">Symptoms / Complaints</label>
+                        {{ form.symptoms(class="form-control rounded-3", rows="3", placeholder="Describe patient symptoms...", id="symptoms") }}
+                        {% if form.symptoms.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.symptoms.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="diagnosis" class="form-label font-weight-bold">Diagnosis</label>
+                        {{ form.diagnosis(class="form-control rounded-3", rows="3", placeholder="e.g. Acute Viral Fever, Hypertension...", id="diagnosis") }}
+                        {% if form.diagnosis.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.diagnosis.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Dynamic Medicine Builder Section -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-capsule-health text-primary me-2"></i>Medicines Prescribed</h5>
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="add-medicine-btn">
+                            <i class="bi bi-plus-circle me-1"></i>Add Medicine
+                        </button>
+                    </div>
+
+                    <!-- Medicine List Container (Appended by main.js) -->
+                    <div id="medicine-container">
+                        <!-- Initial medicine row -->
+                        <div class="med-row position-relative">
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label font-weight-bold">Medicine Name</label>
+                                    <input type="text" name="medicine_name[]" class="form-control" placeholder="e.g. Paracetamol 650mg" required>
+                                </div>
+                                <div class="col-md-5 d-flex align-items-center">
+                                    <div class="mt-4">
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" name="med_0_morning" id="med_0_morning" class="form-check-input">
+                                            <label for="med_0_morning" class="form-check-label">Morning</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" name="med_0_afternoon" id="med_0_afternoon" class="form-check-input">
+                                            <label for="med_0_afternoon" class="form-check-label">Afternoon</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" name="med_0_night" id="med_0_night" class="form-check-input">
+                                            <label for="med_0_night" class="form-check-label">Night</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label font-weight-bold">Duration (Days)</label>
+                                    <input type="number" name="duration_days[]" class="form-control" min="1" value="5" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Remarks & Follow-up -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-8">
+                        <label for="remarks" class="form-label font-weight-bold">Doctor's Remarks / Advice</label>
+                        {{ form.remarks(class="form-control rounded-3", rows="2", placeholder="e.g. Drink plenty of fluids, rest, avoid oily food...", id="remarks") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="follow_up_date" class="form-label font-weight-bold">Follow-up Date</label>
+                        {{ form.follow_up_date(class="form-control rounded-3", type="date", id="follow_up_date") }}
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-end gap-2 border-top pt-4">
+                    <a href="{{ url_for('doctor.patient_details', patient_id=appointment.patient_id) }}" class="btn btn-light px-4 rounded-pill">Cancel</a>
+                    {{ form.submit(class="btn btn-primary px-4 rounded-pill shadow-sm") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

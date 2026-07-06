@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Update Lab Result - {{ lab_test.test_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('doctor.patient_details', patient_id=lab_test.patient_id) }}" class="btn btn-link p-0 text-decoration-none text-muted"><i class="bi bi-arrow-left me-2"></i>Back to Patient File</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <div class="d-flex align-items-center mb-4">
+                <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                    <i class="bi bi-clipboard-check-fill text-success fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-1">Update Lab Test Result</h4>
+                    <p class="text-muted mb-0">Test: <strong>{{ lab_test.test_name }}</strong> | Patient: <strong>{{ lab_test.patient.full_name }}</strong></p>
+                </div>
+            </div>
+
+            <!-- Test Info Summary -->
+            <div class="bg-light rounded-4 p-3 mb-4">
+                <div class="row small">
+                    <div class="col-md-4 mb-2">
+                        <strong>Category:</strong> <span class="text-muted">{{ lab_test.test_category }}</span>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <strong>Ordered Date:</strong> <span class="text-muted">{{ lab_test.test_date.strftime('%d-%b-%Y') }}</span>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <strong>Cost:</strong> <span class="text-muted">INR {{ lab_test.cost }}</span>
+                    </div>
+                    {% if lab_test.description %}
+                    <div class="col-12">
+                        <strong>Instructions:</strong> <span class="text-muted">{{ lab_test.description }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="{{ form.result_value.id }}" class="form-label fw-semibold">Test Result / Findings <span class="text-danger">*</span></label>
+                        {{ form.result_value(class="form-control", rows="4", placeholder="Enter the test results or findings...") }}
+                        {% for error in form.result_value.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.normal_range.id }}" class="form-label fw-semibold">Normal Range</label>
+                        {{ form.normal_range(class="form-control", placeholder="e.g. 70-100") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.unit.id }}" class="form-label fw-semibold">Unit</label>
+                        {{ form.unit(class="form-control", placeholder="e.g. mg/dL") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.result_status.id }}" class="form-label fw-semibold">Result Status <span class="text-danger">*</span></label>
+                        {{ form.result_status(class="form-select") }}
+                    </div>
+                    <div class="col-12">
+                        <label for="{{ form.remarks.id }}" class="form-label fw-semibold">Remarks / Interpretation</label>
+                        {{ form.remarks(class="form-control", rows="2", placeholder="Doctor's interpretation or notes...") }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.report_file.id }}" class="form-label fw-semibold">Attach Report File (Optional)</label>
+                        {{ form.report_file(class="form-control") }}
+                        <div class="form-text">Accepted: PDF, JPG, PNG</div>
+                        {% for error in form.report_file.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-3">
+                    {{ form.submit(class="btn btn-success px-4 py-2 rounded-pill shadow-sm") }}
+                    <a href="{{ url_for('doctor.patient_details', patient_id=lab_test.patient_id) }}" class="btn btn-outline-secondary px-4 py-2 rounded-pill">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

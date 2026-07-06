@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ hospital_name }}{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% if current_theme == 'dark' %}dark-theme{% endif %}">
+
+    <div class="app-container">
+        <!-- Sidebar Navigation (Only visible for authenticated users) -->
+        {% if current_user.is_authenticated %}
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <a href="/" class="text-white text-decoration-none d-flex align-items-center">
+                    <i class="bi bi-hospital-fill me-2 text-primary"></i>
+                    <span>{{ hospital_name }}</span>
+                </a>
+            </div>
+            <ul class="sidebar-menu">
+                {% if current_user.role == 'Admin' %}
+                    <li class="sidebar-menu-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('admin.dashboard') }}" class="sidebar-menu-link">
+                            <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'doctors' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.doctors') }}" class="sidebar-menu-link">
+                            <i class="bi bi-person-pulse-fill"></i><span>Manage Doctors</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'receptionists' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.receptionists') }}" class="sidebar-menu-link">
+                            <i class="bi bi-person-workspace"></i><span>Receptionists</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'patients' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.patients') }}" class="sidebar-menu-link">
+                            <i class="bi bi-people-fill"></i><span>Manage Patients</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'appointments' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.appointments') }}" class="sidebar-menu-link">
+                            <i class="bi bi-calendar-event-fill"></i><span>Appointments</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'departments' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.departments') }}" class="sidebar-menu-link">
+                            <i class="bi bi-building-fill"></i><span>Departments</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'rooms' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.rooms') }}" class="sidebar-menu-link">
+                            <i class="bi bi-door-closed-fill"></i><span>Manage Rooms</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'billing' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.billing') }}" class="sidebar-menu-link">
+                            <i class="bi bi-receipt-cutoff"></i><span>Billing Records</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'lab_tests' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.lab_tests') }}" class="sidebar-menu-link">
+                            <i class="bi bi-clipboard2-pulse-fill"></i><span>Lab Tests</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'reports' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.reports') }}" class="sidebar-menu-link">
+                            <i class="bi bi-file-earmark-bar-graph-fill"></i><span>Export Reports</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'audit' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.audit_logs') }}" class="sidebar-menu-link">
+                            <i class="bi bi-shield-lock-fill"></i><span>Audit Logs</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'settings' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.settings') }}" class="sidebar-menu-link">
+                            <i class="bi bi-gear-fill"></i><span>System Settings</span>
+                        </a>
+                    </li>
+                {% elif current_user.role == 'Doctor' %}
+                    <li class="sidebar-menu-item {% if request.endpoint == 'doctor.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('doctor.dashboard') }}" class="sidebar-menu-link">
+                            <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'patients' in request.endpoint or 'patient_details' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('doctor.patients') }}" class="sidebar-menu-link">
+                            <i class="bi bi-people-fill"></i><span>My Patients</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'bills' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('doctor.view_bills') }}" class="sidebar-menu-link">
+                            <i class="bi bi-wallet2"></i><span>Consultation Fees</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'lab_tests' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('doctor.lab_tests') }}" class="sidebar-menu-link">
+                            <i class="bi bi-clipboard2-pulse-fill"></i><span>Lab Tests</span>
+                        </a>
+                    </li>
+                {% elif current_user.role == 'Receptionist' %}
+                    <li class="sidebar-menu-item {% if request.endpoint == 'receptionist.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('receptionist.dashboard') }}" class="sidebar-menu-link">
+                            <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'register_patient' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('receptionist.register_patient') }}" class="sidebar-menu-link">
+                            <i class="bi bi-person-plus-fill"></i><span>Register Patient</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'book_appointment' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('receptionist.book_appointment') }}" class="sidebar-menu-link">
+                            <i class="bi bi-calendar-plus-fill"></i><span>Book Appointment</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'billing' in request.endpoint or 'bill' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('receptionist.generate_bill') }}" class="sidebar-menu-link">
+                            <i class="bi bi-cash-stack"></i><span>Billing Desk</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'patients' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('receptionist.patients') }}" class="sidebar-menu-link">
+                            <i class="bi bi-search"></i><span>Search Patients</span>
+                        </a>
+                    </li>
+                {% elif current_user.role == 'Patient' %}
+                    <li class="sidebar-menu-item {% if request.endpoint == 'patient.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('patient.dashboard') }}" class="sidebar-menu-link">
+                            <i class="bi bi-grid-1x2-fill"></i><span>My Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'book-appointment' in request.url %}active{% endif %}">
+                        <a href="{{ url_for('patient.book_appointment') }}" class="sidebar-menu-link">
+                            <i class="bi bi-calendar-plus-fill"></i><span>Book Appointment</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'lab-tests' in request.url %}active{% endif %}">
+                        <a href="{{ url_for('patient.lab_tests') }}" class="sidebar-menu-link">
+                            <i class="bi bi-clipboard2-pulse-fill"></i><span>My Lab Tests</span>
+                        </a>
+                    </li>
+                {% endif %}
+                <li class="sidebar-menu-item mt-4">
+                    <a href="{{ url_for('auth.profile') }}" class="sidebar-menu-link text-warning">
+                        <i class="bi bi-person-fill-gear"></i><span>My Profile</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{{ url_for('auth.logout') }}" class="sidebar-menu-link text-danger">
+                        <i class="bi bi-box-arrow-left"></i><span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+        {% endif %}
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <nav class="top-navbar">
+                <div class="d-flex align-items-center">
+                    {% if current_user.is_authenticated %}
+                    <button class="btn btn-outline-secondary me-3 top-navbar-toggle" id="sidebar-toggle">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    {% endif %}
+                    <a href="/" class="text-decoration-none text-dark d-lg-none d-flex align-items-center fw-bold fs-4">
+                        <i class="bi bi-hospital-fill text-primary me-2"></i>{{ hospital_name }}
+                    </a>
+                    
+                    <!-- Search bar for Admins -->
+                    {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+                    <form action="{{ url_for('admin.global_search') }}" method="GET" class="d-none d-md-flex align-items-center">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control bg-light border-0" placeholder="Global Search..." aria-label="Search" value="{{ request.args.get('q', '') }}">
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Light / Dark Mode Toggle Button -->
+                    <button class="btn btn-link p-0 theme-toggle-btn" id="theme-toggle" title="Toggle Light/Dark Theme">
+                        <i class="bi {% if current_theme == 'dark' %}bi-sun-fill{% else %}bi-moon-fill{% endif %}"></i>
+                    </button>
+
+                    {% if current_user.is_authenticated %}
+                        <!-- Notification Dropdown -->
+                        <div class="dropdown position-relative">
+                            <button class="btn btn-link p-0 text-secondary position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationsDropdown">
+                                <i class="bi bi-bell-fill fs-5"></i>
+                                {% if unread_count > 0 %}
+                                    <span class="badge bg-danger rounded-pill notification-badge">{{ unread_count }}</span>
+                                {% endif %}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2" aria-labelledby="notificationsDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                                <div class="d-flex justify-content-between align-items-center pb-2 border-bottom mb-2">
+                                    <h6 class="m-0 fw-bold">Notifications</h6>
+                                    {% if unread_count > 0 %}
+                                        <a href="{{ url_for('auth.read_all_notifications') }}" class="text-primary text-decoration-none small">Mark all read</a>
+                                    {% endif %}
+                                </div>
+                                {% if unread_notifications %}
+                                    {% for notif in unread_notifications %}
+                                        <li class="mb-2 p-2 bg-light rounded position-relative">
+                                            <div class="fw-bold text-primary" style="font-size: 0.9rem;">{{ notif.title }}</div>
+                                            <div class="text-muted small" style="font-size: 0.8rem;">{{ notif.message }}</div>
+                                            <div class="text-end text-muted" style="font-size: 0.7rem;">{{ notif.created_at.strftime('%I:%M %p') }}</div>
+                                            <a href="{{ url_for('auth.read_notification', id=notif.id) }}" class="stretched-link"></a>
+                                        </li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="text-center text-muted p-3">No unread notifications</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+
+                        <!-- User Profile Menu -->
+                        <div class="dropdown">
+                            <button class="btn btn-link p-0 d-flex align-items-center text-decoration-none dropdown-toggle text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <img src="{{ url_for('static', filename='uploads/profile_pics/' + current_user.profile_photo) }}" alt="Profile" class="rounded-circle border" width="35" height="35" style="object-fit: cover;">
+                                <span class="ms-2 d-none d-md-inline fw-semibold" style="color: var(--text-primary);">{{ current_user.full_name }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                <li>
+                                    <div class="px-3 py-2 border-bottom">
+                                        <div class="fw-bold">{{ current_user.full_name }}</div>
+                                        <div class="text-muted small">{{ current_user.email }}</div>
+                                        <div class="badge bg-primary mt-1">{{ current_user.role }}</div>
+                                    </div>
+                                </li>
+                                <li><a class="dropdown-item py-2" href="{{ url_for('auth.profile') }}"><i class="bi bi-person-circle me-2"></i>My Profile</a></li>
+                                {% if current_user.role == 'Patient' %}
+                                    <li><a class="dropdown-item py-2" href="{{ url_for('patient.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>My Dashboard</a></li>
+                                {% elif current_user.role == 'Doctor' %}
+                                    <li><a class="dropdown-item py-2" href="{{ url_for('doctor.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                                {% elif current_user.role == 'Admin' %}
+                                    <li><a class="dropdown-item py-2" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Admin Panel</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <!-- Public Navbar Login/Register Buttons -->
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary px-4 rounded-pill">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary px-4 rounded-pill">Register</a>
+                    {% endif %}
+                </div>
+            </nav>
+
+            <!-- Content Area -->
+            <div class="content-body animated-fade">
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                                {% if category == 'success' %}
+                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                {% elif category == 'danger' or category == 'warning' %}
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                {% else %}
+                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                {% endif %}
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

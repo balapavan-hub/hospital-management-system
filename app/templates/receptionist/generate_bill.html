@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Billing Desk - MediCare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-8 animate-fade">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h3 class="fw-bold mb-4 text-primary border-bottom pb-3"><i class="bi bi-cash-stack me-2"></i>Generate Invoice</h3>
+            
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <h5 class="fw-bold text-muted mb-3">Billing Target</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="patient_id" class="form-label font-weight-bold">Select Patient</label>
+                        {{ form.patient_id(class="form-select rounded-3", id="patient_id") }}
+                        {% if form.patient_id.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.patient_id.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="appointment_id" class="form-label font-weight-bold">Link Appointment (Optional)</label>
+                        {{ form.appointment_id(class="form-select rounded-3", id="appointment_id") }}
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-muted mb-3 border-top pt-3">Line Item Charges</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="consultation_fee" class="form-label font-weight-bold">Consultation Fee (INR)</label>
+                        {{ form.consultation_fee(class="form-control rounded-3", type="number", min="0", id="consultation_fee") }}
+                        {% if form.consultation_fee.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.consultation_fee.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="medicine_charges" class="form-label font-weight-bold">Prescription Medicine Cost (INR)</label>
+                        {{ form.medicine_charges(class="form-control rounded-3", type="number", min="0", id="medicine_charges") }}
+                        {% if form.medicine_charges.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.medicine_charges.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="lab_charges" class="form-label font-weight-bold">Diagnostic / Lab Cost (INR)</label>
+                        {{ form.lab_charges(class="form-control rounded-3", type="number", min="0", id="lab_charges") }}
+                        {% if form.lab_charges.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.lab_charges.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="other_charges" class="form-label font-weight-bold">Ward / Other Charges (INR)</label>
+                        {{ form.other_charges(class="form-control rounded-3", type="number", min="0", id="other_charges") }}
+                        {% if form.other_charges.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.other_charges.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-muted mb-3 border-top pt-3">Discounts & Settlements</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="discount" class="form-label font-weight-bold">Discount Allowed (INR)</label>
+                        {{ form.discount(class="form-control rounded-3", type="number", min="0", id="discount") }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="status" class="form-label font-weight-bold">Payment Status</label>
+                        {{ form.status(class="form-select rounded-3", id="status") }}
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end border-top pt-4">
+                    <a href="{{ url_for('receptionist.dashboard') }}" class="btn btn-light px-4 rounded-pill">Cancel</a>
+                    {{ form.submit(class="btn btn-primary px-4 rounded-pill shadow-sm") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

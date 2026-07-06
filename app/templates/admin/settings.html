@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - Admin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-fade">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h3 class="fw-bold mb-4 text-primary border-bottom pb-3"><i class="bi bi-gear-fill me-2"></i>System Settings</h3>
+            
+            <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-4">
+                    <label for="hospital_name" class="form-label font-weight-bold">Hospital Name</label>
+                    <input type="text" name="hospital_name" id="hospital_name" class="form-control rounded-3" value="{{ hospital_name }}" placeholder="e.g. City General Hospital" required>
+                    <div class="form-text text-muted small mt-2">
+                        This name will be displayed in the landing page, navigation bar, browser titles, and invoice PDFs across the system.
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end border-top pt-4">
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-light px-4 rounded-pill">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-4 rounded-pill shadow-sm">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Register Patient - MediCare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h3 class="fw-bold mb-4 text-primary border-bottom pb-3"><i class="bi bi-person-plus-fill me-2"></i>Register New Patient</h3>
+            
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <h5 class="fw-bold text-muted mb-3">Personal details</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="first_name" class="form-label font-weight-bold">First Name</label>
+                        {{ form.first_name(class="form-control rounded-3", placeholder="First name", id="first_name") }}
+                        {% if form.first_name.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.first_name.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="last_name" class="form-label font-weight-bold">Last Name</label>
+                        {{ form.last_name(class="form-control rounded-3", placeholder="Last name", id="last_name") }}
+                        {% if form.last_name.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.last_name.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="gender" class="form-label font-weight-bold">Gender</label>
+                        {{ form.gender(class="form-select rounded-3", id="gender") }}
+                        {% if form.gender.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.gender.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="date_of_birth" class="form-label font-weight-bold">Date of Birth</label>
+                        {{ form.date_of_birth(class="form-control rounded-3", type="date", id="date_of_birth") }}
+                        {% if form.date_of_birth.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.date_of_birth.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="blood_group" class="form-label font-weight-bold">Blood Group</label>
+                        {{ form.blood_group(class="form-select rounded-3", id="blood_group") }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label font-weight-bold">Phone Number</label>
+                        {{ form.phone(class="form-control rounded-3", placeholder="Phone number", id="phone") }}
+                        {% if form.phone.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.phone.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-muted mb-3">Address & Credentials</h5>
+                <p class="text-muted small mb-3">Provide email. Note: The account password will default to <code>welcome123</code>. The patient will be notified to change it at their first login.</p>
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <label for="email" class="form-label font-weight-bold">Email Address</label>
+                        {{ form.email(class="form-control rounded-3", placeholder="e.g. name@domain.com", id="email") }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.email.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label for="address" class="form-label font-weight-bold">Home Address</label>
+                        {{ form.address(class="form-control rounded-3", rows="2", placeholder="Current home address", id="address") }}
+                    </div>
+                    <div class="col-12">
+                        <label for="medical_history" class="form-label font-weight-bold">Pre-existing Medical History</label>
+                        {{ form.medical_history(class="form-control rounded-3", rows="2", placeholder="Chronic diseases, allergies, history...", id="medical_history") }}
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end border-top pt-4">
+                    <a href="{{ url_for('receptionist.dashboard') }}" class="btn btn-light px-4 rounded-pill">Cancel</a>
+                    {{ form.submit(class="btn btn-primary px-4 rounded-pill shadow-sm") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

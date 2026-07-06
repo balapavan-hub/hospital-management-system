@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - MediCare{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <h3 class="fw-bold mb-1">Search Results</h3>
+    <p class="text-muted mb-4">Showing results for query: <strong class="text-primary">"{{ query }}"</strong></p>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-pills mb-4 gap-2" id="searchTab" role="tablist">
+        <li class="nav-item animate-fade" role="presentation">
+            <button class="nav-link active rounded-pill px-4" id="patients-tab" data-bs-toggle="tab" data-bs-target="#patients" type="button" role="tab" aria-controls="patients" aria-selected="true">
+                Patients ({{ results.patients | length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4" id="doctors-tab" data-bs-toggle="tab" data-bs-target="#doctors" type="button" role="tab" aria-controls="doctors" aria-selected="false">
+                Doctors ({{ results.doctors | length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab" aria-controls="appointments" aria-selected="false">
+                Appointments ({{ results.appointments | length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4" id="bills-tab" data-bs-toggle="tab" data-bs-target="#bills" type="button" role="tab" aria-controls="bills" aria-selected="false">
+                Bills ({{ results.bills | length }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content" id="searchTabContent">
+        <!-- Patients Results -->
+        <div class="tab-pane fade show active" id="patients" role="tabpanel" aria-labelledby="patients-tab">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-3">Patient Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in results.patients %}
+                        <tr>
+                            <td class="px-3"><strong>{{ p.full_name }}</strong></td>
+                            <td>{{ p.phone }}</td>
+                            <td>{{ p.user.email }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('admin.patients', search=p.phone) }}" class="btn btn-primary btn-sm rounded-pill px-3">Go to Record</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No matching patients found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Doctors Results -->
+        <div class="tab-pane fade" id="doctors" role="tabpanel" aria-labelledby="doctors-tab">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-3">Doctor Name</th>
+                            <th>Department</th>
+                            <th>Specialization</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in results.doctors %}
+                        <tr>
+                            <td class="px-3"><strong>{{ doc.full_name }}</strong></td>
+                            <td>{{ doc.department.name }}</td>
+                            <td>{{ doc.specialization }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('admin.doctors', search=doc.last_name) }}" class="btn btn-primary btn-sm rounded-pill px-3">Go to Record</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No matching doctors found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Appointments Results -->
+        <div class="tab-pane fade" id="appointments" role="tabpanel" aria-labelledby="appointments-tab">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-3">Appt ID</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Date / Slot</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in results.appointments %}
+                        <tr>
+                            <td class="px-3">#{{ appt.id }}</td>
+                            <td>{{ appt.patient.full_name }}</td>
+                            <td>{{ appt.doctor.full_name }}</td>
+                            <td>{{ appt.appointment_date }} @ {{ appt.time_slot }}</td>
+                            <td><span class="badge bg-secondary">{{ appt.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No matching appointments found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bills Results -->
+        <div class="tab-pane fade" id="bills" role="tabpanel" aria-labelledby="bills-tab">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-3">Invoice ID</th>
+                            <th>Patient</th>
+                            <th>Grand Total</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in results.bills %}
+                        <tr>
+                            <td class="px-3">#MC-{{ "%06d"|format(bill.id) }}</td>
+                            <td>{{ bill.patient.full_name }}</td>
+                            <td>INR {{ bill.grand_total }}</td>
+                            <td><span class="badge {% if bill.status == 'Paid' %}bg-success{% else %}bg-warning{% endif %}">{{ bill.status }}</span></td>
+                            <td class="text-end">
+                                <a href="{{ url_for('receptionist.view_bill', id=bill.id) }}" class="btn btn-primary btn-sm rounded-pill px-3">View Bill</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No matching invoices found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

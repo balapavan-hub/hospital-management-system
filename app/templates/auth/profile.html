@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - MediCare{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- User Info Card -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 text-center p-4">
+            <img src="{{ url_for('static', filename='uploads/profile_pics/' + current_user.profile_photo) }}" alt="Profile Photo" class="rounded-circle border border-primary border-3 mx-auto mb-3" width="140" height="140" style="object-fit: cover;">
+            <h4 class="fw-bold mb-1">{{ current_user.full_name }}</h4>
+            <div class="badge bg-primary px-3 py-2 rounded-pill mb-3">{{ current_user.role }}</div>
+            <p class="text-muted small">Registered since: {{ current_user.created_at.strftime('%d-%b-%Y') }}</p>
+            <div class="border-top pt-3 text-start small">
+                <div class="mb-2"><strong>Email:</strong> <span class="text-muted">{{ current_user.email }}</span></div>
+                {% if current_user.role == 'Patient' and current_user.patient %}
+                    <div class="mb-2"><strong>Phone:</strong> <span class="text-muted">{{ current_user.patient.phone }}</span></div>
+                    <div class="mb-2"><strong>Blood Group:</strong> <span class="text-muted">{{ current_user.patient.blood_group or 'Not set' }}</span></div>
+                    <div><strong>DOB:</strong> <span class="text-muted">{{ current_user.patient.date_of_birth.strftime('%d-%b-%Y') }}</span></div>
+                {% elif current_user.role == 'Doctor' and current_user.doctor %}
+                    <div class="mb-2"><strong>Phone:</strong> <span class="text-muted">{{ current_user.doctor.phone }}</span></div>
+                    <div class="mb-2"><strong>Department:</strong> <span class="text-muted">{{ current_user.doctor.department.name }}</span></div>
+                    <div><strong>Specialization:</strong> <span class="text-muted">{{ current_user.doctor.specialization }}</span></div>
+                {% elif current_user.role == 'Receptionist' and current_user.receptionist %}
+                    <div class="mb-2"><strong>Phone:</strong> <span class="text-muted">{{ current_user.receptionist.phone }}</span></div>
+                    <div><strong>Shift:</strong> <span class="text-muted">{{ current_user.receptionist.shift }}</span></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Editing Sections -->
+    <div class="col-lg-8">
+        <!-- Edit Profile Form -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <h5 class="fw-bold mb-4 text-primary"><i class="bi bi-person-fill-gear me-2"></i>Edit Profile Details</h5>
+            <form method="POST" action="" enctype="multipart/form-data">
+                {{ profile_form.hidden_tag() }}
+                <input type="hidden" name="action" value="update_profile">
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="email" class="form-label font-weight-bold">Email Address</label>
+                        {{ profile_form.email(class="form-control rounded-3", id="email") }}
+                        {% if profile_form.email.errors %}
+                            <div class="text-danger small mt-1">{% for e in profile_form.email.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label font-weight-bold">Phone Number</label>
+                        {{ profile_form.phone(class="form-control rounded-3", id="phone") }}
+                        {% if profile_form.phone.errors %}
+                            <div class="text-danger small mt-1">{% for e in profile_form.phone.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if current_user.role == 'Patient' %}
+                    <div class="col-12">
+                        <label for="address" class="form-label font-weight-bold">Home Address</label>
+                        {{ profile_form.address(class="form-control rounded-3", rows="2", id="address") }}
+                    </div>
+                    <div class="col-12">
+                        <label for="medical_history" class="form-label font-weight-bold">Medical History</label>
+                        {{ profile_form.medical_history(class="form-control rounded-3", rows="2", id="medical_history") }}
+                    </div>
+                    {% elif current_user.role == 'Doctor' %}
+                    <div class="col-12">
+                        <label for="address" class="form-label font-weight-bold">Biography</label>
+                        {{ profile_form.address(class="form-control rounded-3", rows="3", id="address") }}
+                    </div>
+                    {% endif %}
+
+                    <div class="col-12">
+                        <label for="profile_photo" class="form-label font-weight-bold">Update Profile Photo</label>
+                        {{ profile_form.profile_photo(class="form-control rounded-3", id="profile_photo") }}
+                        {% if profile_form.profile_photo.errors %}
+                            <div class="text-danger small mt-1">{% for e in profile_form.profile_photo.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-12 mt-4">
+                        {{ profile_form.submit(class="btn btn-primary px-4 py-2 rounded-pill") }}
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Change Password Form -->
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-key-fill me-2"></i>Change Password</h5>
+            <form method="POST" action="">
+                {{ password_form.hidden_tag() }}
+                <input type="hidden" name="action" value="change_password">
+                
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="old_password" class="form-label font-weight-bold">Current Password</label>
+                        {{ password_form.old_password(class="form-control rounded-3", type="password", placeholder="Enter current password", id="old_password") }}
+                        {% if password_form.old_password.errors %}
+                            <div class="text-danger small mt-1">{% for e in password_form.old_password.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="new_password" class="form-label font-weight-bold">New Password</label>
+                        {{ password_form.new_password(class="form-control rounded-3", type="password", placeholder="At least 6 characters", id="new_password") }}
+                        {% if password_form.new_password.errors %}
+                            <div class="text-danger small mt-1">{% for e in password_form.new_password.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="confirm_password" class="form-label font-weight-bold">Confirm New Password</label>
+                        {{ password_form.confirm_password(class="form-control rounded-3", type="password", placeholder="Repeat new password", id="confirm_password") }}
+                        {% if password_form.confirm_password.errors %}
+                            <div class="text-danger small mt-1">{% for e in password_form.confirm_password.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-12 mt-4">
+                        {{ password_form.submit(class="btn btn-danger px-4 py-2 rounded-pill") }}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

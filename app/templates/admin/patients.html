@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Patients - MediCare{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">Manage Hospital Patients</h3>
+            <p class="text-muted mb-0">View registered patients profiles and historical logs</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form action="" method="GET" class="d-flex align-items-center">
+                <input type="text" name="search" class="form-control rounded-pill border-secondary border-opacity-25" placeholder="Search patients..." value="{{ search }}">
+                <button type="submit" class="btn btn-secondary rounded-pill ms-2">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th class="px-4">Patient ID / Details</th>
+                    <th>Age / Gender</th>
+                    <th>Phone Number</th>
+                    <th>Blood Group</th>
+                    <th>Home Address</th>
+                    <th>Registered On</th>
+                    <th class="text-end px-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in pagination.items %}
+                <tr>
+                    <td class="px-4">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='uploads/profile_pics/' + patient.user.profile_photo) }}" alt="Profile" class="rounded-circle border" width="45" height="45" style="object-fit: cover;">
+                            <div class="ms-3">
+                                <div class="fw-bold">#PT-{{ "%04d"|format(patient.id) }} - {{ patient.full_name }}</div>
+                                <span class="text-muted small">{{ patient.user.email }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ patient.age }} Y / {{ patient.gender }}</td>
+                    <td>{{ patient.phone }}</td>
+                    <td>
+                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-3 px-2 py-1">{{ patient.blood_group or 'N/A' }}</span>
+                    </td>
+                    <td>
+                        <span class="text-muted small d-inline-block text-truncate" style="max-width: 200px;" title="{{ patient.address or '' }}">
+                            {{ patient.address or 'N/A' }}
+                        </span>
+                    </td>
+                    <td>{{ patient.created_at.strftime('%d-%b-%Y') }}</td>
+                    <td class="text-end px-4">
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#deleteModal{{ patient.id }}"><i class="bi bi-trash-fill me-1"></i>Delete</button>
+                    </td>
+                </tr>
+
+                <!-- Delete Modal -->
+                <div class="modal fade" id="deleteModal{{ patient.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ patient.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0">
+                            <div class="modal-header bg-danger text-white border-0">
+                                <h5 class="modal-title fw-bold" id="deleteModalLabel{{ patient.id }}">Delete Patient Account</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-4 text-center">
+                                <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-3 d-block"></i>
+                                <h5 class="fw-bold">Are you sure?</h5>
+                                <p class="text-muted mb-0">You are about to permanently delete the profile and medical records of patient <strong>{{ patient.full_name }}</strong>. All billing, prescriptions, and medical files will be lost. This action is irreversible.</p>
+                            </div>
+                            <div class="modal-footer border-0 justify-content-center pb-4">
+                                <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{{ url_for('admin.delete_patient', id=patient.id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-danger px-4 rounded-pill">Delete Account</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-5">No patients found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paging -->
+    {% if pagination.pages > 1 %}
+    <nav class="d-flex justify-content-center mt-4">
+        <ul class="pagination">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin.patients', page=pagination.prev_num, search=search) }}">Previous</a>
+            </li>
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.patients', page=page_num, search=search) }}">{{ page_num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin.patients', page=pagination.next_num, search=search) }}">Next</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

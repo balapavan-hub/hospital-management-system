@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Book Appointment - MediCare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7 animate-fade">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h3 class="fw-bold mb-4 text-primary border-bottom pb-3"><i class="bi bi-calendar-plus me-2"></i>Book Doctor Appointment</h3>
+            
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    <label for="department_id" class="form-label font-weight-bold">Select Department</label>
+                    {{ form.department_id(class="form-select rounded-3", id="department_id") }}
+                    {% if form.department_id.errors %}
+                        <div class="text-danger small mt-1">{% for e in form.department_id.errors %}{{ e }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="doctor_id" class="form-label font-weight-bold">Select Specialist Doctor</label>
+                    {{ form.doctor_id(class="form-select rounded-3", id="doctor_id") }}
+                    {% if form.doctor_id.errors %}
+                        <div class="text-danger small mt-1">{% for e in form.doctor_id.errors %}{{ e }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="appointment_date" class="form-label font-weight-bold">Choose Date</label>
+                        {{ form.appointment_date(class="form-control rounded-3", type="date", min=today_date, id="appointment_date") }}
+                        {% if form.appointment_date.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.appointment_date.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="time_slot" class="form-label font-weight-bold">Choose Time Slot</label>
+                        {{ form.time_slot(class="form-select rounded-3", id="time_slot") }}
+                        {% if form.time_slot.errors %}
+                            <div class="text-danger small mt-1">{% for e in form.time_slot.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="reason" class="form-label font-weight-bold">Reason for Appointment / Symptoms</label>
+                    {{ form.reason(class="form-control rounded-3", rows="3", placeholder="Briefly describe symptoms (cough, fever, chest pain) or checkup details...", id="reason") }}
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end border-top pt-4">
+                    <a href="{{ url_for('patient.dashboard') }}" class="btn btn-light px-4 rounded-pill">Cancel</a>
+                    {{ form.submit(class="btn btn-primary px-4 rounded-pill shadow-sm") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Ensure min date is set to today's date on date picker
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('appointment_date');
+    if (dateInput) {
+        dateInput.min = today;
+    }
+</script>
+{% endblock %}

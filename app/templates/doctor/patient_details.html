@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Patient File - {{ patient.full_name }} - MediCare{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('doctor.patients') }}" class="btn btn-link p-0 text-decoration-none text-muted"><i class="bi bi-arrow-left me-2"></i>Back to Patient Directory</a>
+</div>
+
+<div class="row g-4">
+    <!-- Patient Profile Summary -->
+    <div class="col-lg-4 animate-fade">
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+            <img src="{{ url_for('static', filename='uploads/profile_pics/' + patient.user.profile_photo) }}" alt="Profile" class="rounded-circle border border-primary border-3 mx-auto mb-3" width="120" height="120" style="object-fit: cover;">
+            <h4 class="fw-bold mb-1">{{ patient.full_name }}</h4>
+            <div class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-3 py-1 mb-4">Patient File</div>
+            
+            <div class="border-top pt-3 text-start small">
+                <div class="mb-2"><strong>Patient ID:</strong> <span class="text-muted">#PT-{{ "%04d"|format(patient.id) }}</span></div>
+                <div class="mb-2"><strong>Age / Gender:</strong> <span class="text-muted">{{ patient.age }} Y / {{ patient.gender }}</span></div>
+                <div class="mb-2"><strong>Blood Group:</strong> <span class="badge bg-danger bg-opacity-10 text-danger">{{ patient.blood_group or 'N/A' }}</span></div>
+                <div class="mb-2"><strong>Phone Number:</strong> <span class="text-muted">{{ patient.phone }}</span></div>
+                <div class="mb-3"><strong>Email:</strong> <span class="text-muted">{{ patient.user.email }}</span></div>
+                <div class="mb-3"><strong>Home Address:</strong> <p class="text-muted mb-0">{{ patient.address or 'No address provided.' }}</p></div>
+                <div class="mb-0"><strong>Pre-existing Conditions / Medical History:</strong> <p class="text-danger-emphasis bg-danger-subtle p-2 rounded-3 mt-1 mb-0">{{ patient.medical_history or 'No medical history reported.' }}</p></div>
+            </div>
+            
+            <div class="mt-4">
+                <a href="{{ url_for('doctor.upload_report', patient_id=patient.id) }}" class="btn btn-primary btn-sm rounded-pill w-100 py-2"><i class="bi bi-upload me-2"></i>Upload Lab Report</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Records (Tabs) -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <ul class="nav nav-tabs mb-4" id="recordsTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold" id="appts-tab" data-bs-toggle="tab" data-bs-target="#appts" type="button" role="tab" aria-controls="appts" aria-selected="true">
+                        Appointments ({{ appointments | length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="presc-tab" data-bs-toggle="tab" data-bs-target="#presc" type="button" role="tab" aria-controls="presc" aria-selected="false">
+                        Prescriptions ({{ prescriptions | length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button" role="tab" aria-controls="files" aria-selected="false">
+                        Diagnostic Files ({{ reports | length }})
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="recordsTabContent">
+                <!-- Appointments Tab -->
+                <div class="tab-pane fade show active" id="appts" role="tabpanel" aria-labelledby="appts-tab">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time Slot</th>
+                                    <th>Symptoms / Reason</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in appointments %}
+                                <tr>
+                                    <td class="fw-bold">{{ appt.appointment_date.strftime('%d-%b-%Y') }}</td>
+                                    <td>{{ appt.time_slot }}</td>
+                                    <td>{{ appt.reason or 'General consultation' }}</td>
+                                    <td>
+                                        <span class="badge status-badge 
+                                            {% if appt.status == 'Confirmed' %}bg-success-subtle text-success
+                                            {% elif appt.status == 'Pending' %}bg-warning-subtle text-warning
+                                            {% elif appt.status == 'Completed' %}bg-primary-subtle text-primary
+                                            {% else %}bg-danger-subtle text-danger
+                                            {% endif %}">
+                                            {{ appt.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        {% if appt.status == 'Confirmed' or appt.status == 'Pending' %}
+                                            <a href="{{ url_for('doctor.write_prescription', appointment_id=appt.id) }}" class="btn btn-primary btn-sm rounded-pill"><i class="bi bi-prescription me-1"></i>Prescribe</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">No appointment history found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Prescriptions Tab -->
+                <div class="tab-pane fade" id="presc" role="tabpanel" aria-labelledby="presc-tab">
+                    {% for pres in prescriptions %}
+                    <div class="border rounded-4 p-3 mb-3 bg-light position-relative">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                            <div>
+                                <span class="fw-bold text-primary">Prescription #Rx-{{ "%05d"|format(pres.id) }}</span>
+                                <span class="text-muted small ms-2">Date: {{ pres.created_at.strftime('%d-%b-%Y') }}</span>
+                            </div>
+                            <a href="{{ url_for('doctor.download_prescription_pdf', id=pres.id) }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-file-earmark-pdf-fill me-1"></i>Download PDF</a>
+                        </div>
+                        <div class="small mb-2">
+                            <strong>Symptoms:</strong> <span class="text-muted">{{ pres.symptoms }}</span>
+                        </div>
+                        <div class="small mb-2">
+                            <strong>Diagnosis:</strong> <span class="text-muted">{{ pres.diagnosis }}</span>
+                        </div>
+                        <div class="small">
+                            <strong>Medicines Prescribed:</strong>
+                            <ul class="mb-0 ps-3 mt-1 text-muted">
+                                {% for med in pres.medicines %}
+                                    <li>
+                                        {{ med.medicine_name }} - Duration: {{ med.duration_days }} days 
+                                        (Dosage: 
+                                        {% if med.dosage_morning %}Morning {% endif %}
+                                        {% if med.dosage_afternoon %}Afternoon {% endif %}
+                                        {% if med.dosage_night %}Night{% endif %})
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% if pres.remarks %}
+                        <div class="small mt-2">
+                            <strong>Remarks:</strong> <span class="text-muted">{{ pres.remarks }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">No prescriptions found.</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Lab Reports Tab -->
+                <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th>Report Name</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in reports %}
+                                <tr>
+                                    <td class="fw-bold text-dark"><i class="bi bi-file-earmark-text-fill text-primary me-2"></i>{{ r.report_name }}</td>
+                                    <td class="small">{{ r.doctor.full_name if r.doctor else 'Patient' }}</td>
+                                    <td>{{ r.upload_date.strftime('%d-%b-%Y') }}</td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('doctor.download_report', id=r.id) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3"><i class="bi bi-download me-1"></i>Download</a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No diagnostic reports uploaded yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

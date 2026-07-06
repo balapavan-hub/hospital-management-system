@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Receptionist Dashboard - MediCare{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">Receptionist Desk Dashboard</h2>
+        <p class="text-muted mb-0">Monitor today's visits queue, billing desks, and patient arrivals</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('receptionist.register_patient') }}" class="btn btn-primary-gradient px-4 rounded-pill shadow-sm"><i class="bi bi-person-plus-fill me-2"></i>Register New Patient</a>
+        <a href="{{ url_for('receptionist.book_appointment') }}" class="btn btn-secondary-gradient px-4 rounded-pill shadow-sm"><i class="bi bi-calendar-plus-fill me-2"></i>Book Appointment</a>
+        <a href="{{ url_for('receptionist.generate_bill') }}" class="btn btn-warning px-4 text-white rounded-pill shadow-sm"><i class="bi bi-cash-stack me-2"></i>Generate Bill</a>
+    </div>
+</div>
+
+<!-- Stat row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card border-0 p-4 h-100" style="border-left-color: #0d6efd;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted font-weight-bold mb-1">Today's Visits</h6>
+                    <h2 class="fw-extrabold mb-0">{{ stats.total_today }}</h2>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary rounded-4 p-3 fs-3">
+                    <i class="bi bi-calendar2-event-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card border-0 p-4 h-100" style="border-left-color: #f59e0b;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted font-weight-bold mb-1">Waiting (Pending)</h6>
+                    <h2 class="fw-extrabold mb-0">{{ stats.waiting_count }}</h2>
+                </div>
+                <div class="bg-warning bg-opacity-10 text-warning rounded-4 p-3 fs-3">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card stat-card border-0 p-4 h-100" style="border-left-color: #10b981;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted font-weight-bold mb-1">Confirmed</h6>
+                    <h2 class="fw-extrabold mb-0">{{ stats.confirmed_count }}</h2>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success rounded-4 p-3 fs-3">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card stat-card border-0 p-4 h-100" style="border-left-color: #8b5cf6;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted font-weight-bold mb-1">Completed</h6>
+                    <h2 class="fw-extrabold mb-0">{{ stats.completed_count }}</h2>
+                </div>
+                <div class="bg-purple bg-opacity-10 rounded-4 p-3 fs-3" style="color: #8b5cf6; background-color: rgba(139, 92, 246, 0.1);">
+                    <i class="bi bi-file-earmark-check-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's General Queue -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 animate-fade">
+    <h4 class="fw-bold mb-3"><i class="bi bi-list-columns-reverse me-2 text-primary"></i>Today's Arrival Queue</h4>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th class="px-4">Time Slot</th>
+                    <th>Patient Name</th>
+                    <th>Consulting Doctor</th>
+                    <th>Reason / Symptoms</th>
+                    <th>Status</th>
+                    <th class="text-end px-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in today_appointments %}
+                <tr>
+                    <td class="px-4 fw-semibold text-primary"><i class="bi bi-clock me-1"></i>{{ appt.time_slot }}</td>
+                    <td>
+                        <div class="fw-bold">{{ appt.patient.full_name }}</div>
+                        <span class="text-muted small">{{ appt.patient.phone }} | Gender: {{ appt.patient.gender }} | Age: {{ appt.patient.age }}</span>
+                    </td>
+                    <td>
+                        <div class="fw-bold">{{ appt.doctor.full_name }}</div>
+                        <span class="text-muted small">{{ appt.doctor.department.name }}</span>
+                    </td>
+                    <td>{{ appt.reason or 'Checkup' }}</td>
+                    <td>
+                        <span class="badge status-badge 
+                            {% if appt.status == 'Confirmed' %}bg-success-subtle text-success
+                            {% elif appt.status == 'Pending' %}bg-warning-subtle text-warning
+                            {% elif appt.status == 'Completed' %}bg-primary-subtle text-primary
+                            {% else %}bg-danger-subtle text-danger
+                            {% endif %}">
+                            {{ appt.status }}
+                        </span>
+                    </td>
+                    <td class="text-end px-4">
+                        <div class="d-flex justify-content-end gap-1">
+                            {% if appt.status == 'Pending' %}
+                            <form action="{{ url_for('receptionist.confirm_appointment', id=appt.id) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-success btn-sm rounded-pill px-3"><i class="bi bi-check-lg"></i> Confirm Checkin</button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if appt.status in ['Pending', 'Confirmed'] %}
+                            <form action="{{ url_for('receptionist.cancel_appointment', id=appt.id) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill"><i class="bi bi-x-lg"></i> Cancel</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">No appointments booked for today.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
