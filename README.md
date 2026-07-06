@@ -71,7 +71,7 @@ The seeder initializes the system with a clean Admin account. No mock doctor, re
 
 | Role | Email Address | Password | Features |
 | :--- | :--- | :--- | :--- |
-| **Admin** | ----------- | `admin123` | Doctor/Staff/Room CRUD, System Settings, Analytics, Audit Logs |
+| **Admin** | ----------- | `---------` | Doctor/Staff/Room CRUD, System Settings, Analytics, Audit Logs |
 | **Doctor / Receptionist** | *Registered by Admin* | *Set during registration* | Respective workflow dashboards |
 | **Patient** | *Registered by Front Desk or Sign Up* | *Set during signup* | Patient scheduling & history dashboard |
 
