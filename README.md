@@ -1,6 +1,6 @@
-# MediCare - Hospital Management System
+Hospital Management System
 
-MediCare is a production-ready, fully functional full-stack web application designed for hospitals to manage clinical operations, patient registrations, appointments scheduling, doctor prescriptions, billing invoices, and analytical reports.
+Hospital Management System is a production-ready, fully functional full-stack web application designed for hospitals to manage clinical operations, patient registrations, appointments scheduling, doctor prescriptions, billing invoices, and analytical reports.
 
 The application features a modern, responsive user interface with complete Role-Based Access Control (RBAC) and support for a Light/Dark theme.
 
@@ -71,7 +71,7 @@ The seeder initializes the system with a clean Admin account. No mock doctor, re
 
 | Role | Email Address | Password | Features |
 | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@hospital.com` | `admin123` | Doctor/Staff/Room CRUD, System Settings, Analytics, Audit Logs |
+| **Admin** | ----------- | `admin123` | Doctor/Staff/Room CRUD, System Settings, Analytics, Audit Logs |
 | **Doctor / Receptionist** | *Registered by Admin* | *Set during registration* | Respective workflow dashboards |
 | **Patient** | *Registered by Front Desk or Sign Up* | *Set during signup* | Patient scheduling & history dashboard |
 
@@ -80,8 +80,8 @@ The seeder initializes the system with a clean Admin account. No mock doctor, re
 ## Database Configuration (MySQL)
 
 By default, the application connects to a local MySQL server using:
-- **Host**: `localhost:3306`
-- **Database Name**: `medicare_db`
+- **Host**: `localhost:----`
+- **Database Name**: `healthcare management system_db`
 - **User**: `root`
 - **Password**: `""` (Empty password)
 
