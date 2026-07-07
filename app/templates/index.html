@@ -718,6 +718,93 @@
             0%, 80%, 100% { transform: scale(1); opacity: 0.4; box-shadow: 0 0 5px #fff; }
             90% { transform: scale(1.8); opacity: 1; box-shadow: 0 0 15px #fff, 0 0 25px var(--primary-color); }
         }
+
+        /* Founder's Vision Section Styles */
+        .founder-image-wrapper {
+            position: relative;
+            display: inline-block;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid rgba(13, 110, 253, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            animation: founderFloat 6s infinite ease-in-out;
+            max-width: 100%;
+        }
+
+        .founder-image {
+            max-width: 100%;
+            height: auto;
+            max-height: 480px;
+            object-fit: cover;
+            display: block;
+            border-radius: 14px;
+        }
+
+        .founder-glow-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            box-shadow: inset 0 0 40px rgba(13, 110, 253, 0.15);
+            border-radius: 14px;
+        }
+
+        .vision-mission-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .vision-mission-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-color) !important;
+        }
+
+        .value-mini-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .value-mini-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+        }
+
+        .value-mini-card i {
+            font-size: 1.1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .value-mini-card:hover i {
+            transform: scale(1.2);
+        }
+
+        .founder-quote-wrapper {
+            border-left: 3px solid var(--primary-color);
+            padding-left: 1rem;
+            margin-top: 1.5rem;
+            background-color: rgba(13, 110, 253, 0.03);
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        @keyframes founderFloat {
+            0%, 100% { transform: translateY(0); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+            50% { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(13, 110, 253, 0.12); }
+        }
     </style>
 </head>
 <body class="{% if current_theme == 'dark' %}dark-theme{% endif %}">
@@ -1028,6 +1115,105 @@
                         <p class="text-secondary italic mb-3">"Accessing patient vitals logs and writing digital prescriptions is incredibly seamless. Data transfer is fast and highly reliable."</p>
                         <div class="fw-bold text-dark small">Chief Medical Officer</div>
                         <span class="text-muted small">Diagnostic Clinic Network</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Founder's Vision Section -->
+    <section class="section-padding bg-light scroll-trigger" id="founder-vision">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <!-- Left: Founder Image -->
+                <div class="col-lg-5 text-center text-lg-start stagger-item">
+                    <div class="founder-image-wrapper">
+                        <img src="{{ url_for('static', filename='images/founder.jpg') }}" alt="D. B. Pavan" class="founder-image">
+                        <div class="founder-glow-overlay"></div>
+                    </div>
+                </div>
+                
+                <!-- Right: Content -->
+                <div class="col-lg-7 stagger-item">
+                    <div class="founder-content-wrapper text-start">
+                        <span class="text-primary fw-bold text-uppercase tracking-wider">Meet the Founder</span>
+                        <h2 class="fw-bold mt-2 mb-1" style="color: var(--text-primary);">D. B. Pavan</h2>
+                        <div class="text-secondary fw-semibold mb-4">Founder & Developer, MediConnect India</div>
+                        
+                        <p class="founder-message mb-4 leading-relaxed" style="color: var(--text-secondary); font-size: 0.95rem; text-align: justify;">
+                            "Healthcare should never be limited by location or disconnected systems.
+                            <br><br>
+                            MediConnect India was created with a vision to digitally connect hospitals across the country through one secure and intelligent healthcare platform. By enabling hospitals to operate independently while remaining part of a unified ecosystem, we aim to simplify healthcare management, improve collaboration, and provide patients with seamless access to medical services wherever they go.
+                            <br><br>
+                            Our mission is to empower healthcare institutions with modern technology while ensuring security, scalability, and an exceptional user experience."
+                        </p>
+                        
+                        <!-- Mission & Vision Cards Row -->
+                        <div class="row g-3 mb-4 stagger-container">
+                            <div class="col-md-6 stagger-item">
+                                <div class="vision-mission-card border-primary-subtle">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="bi bi-bullseye me-2"></i>Our Mission</h6>
+                                    <p class="text-secondary small mb-0">"To build India's most trusted digital healthcare platform by connecting hospitals through secure, intelligent, and scalable technology."</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 stagger-item">
+                                <div class="vision-mission-card border-primary-subtle">
+                                    <h6 class="fw-bold text-primary mb-2"><i class="bi bi-eye-fill me-2"></i>Our Vision</h6>
+                                    <p class="text-secondary small mb-0">"To make healthcare more connected, efficient, accessible, and technology-driven for every hospital and every patient across India."</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Core Values grid -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-dark mb-3">Our Core Values</h6>
+                            <div class="row g-2 stagger-container">
+                                <div class="col-6 col-md-4 stagger-item">
+                                    <div class="value-mini-card">
+                                        <i class="bi bi-lightbulb text-primary"></i>
+                                        <span>Innovation</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4 stagger-item">
+                                    <div class="value-mini-card">
+                                        <i class="bi bi-shield-check text-primary"></i>
+                                        <span>Security</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4 stagger-item">
+                                    <div class="value-mini-card">
+                                        <i class="bi bi-heart text-primary"></i>
+                                        <span>Trust</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4 stagger-item">
+                                    <div class="value-mini-card">
+                                        <i class="bi bi-universal-access text-primary"></i>
+                                        <span>Accessibility</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4 stagger-item">
+                                    <div class="value-mini-card">
+                                        <i class="bi bi-bounding-box-circles text-primary"></i>
+                                        <span>Scalability</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4 stagger-item">
+                                    <div class="value-mini-card">
+                                        <i class="bi bi-person-heart text-primary"></i>
+                                        <span>Patient-Centric Care</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quote block -->
+                        <div class="founder-quote-wrapper">
+                            <p class="mb-2 italic text-secondary small">
+                                "Technology is most powerful when it helps people. MediConnect India is built to make healthcare more connected, efficient, and accessible across the nation."
+                            </p>
+                            <div class="text-primary fw-bold small">— D. B. Pavan</div>
+                        </div>
                     </div>
                 </div>
             </div>
