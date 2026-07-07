@@ -122,6 +122,7 @@ def book_appointment():
     
     # Load departments and doctors inside the selected hospital
     departments = Department.query.filter_by(hospital_id=hospital_id).all()
+    form.department_id.choices = [(0, 'Select Department')] + [(d.id, d.name) for d in Department.query.filter_by(hospital_id=hospital_id).order_by(Department.name).all()]
     form.doctor_id.choices = [(d.id, d.full_name) for d in Doctor.query.filter_by(hospital_id=hospital_id).all()]
     
     if form.validate_on_submit():
