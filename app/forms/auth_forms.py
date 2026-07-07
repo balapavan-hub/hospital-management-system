@@ -180,38 +180,7 @@ class HospitalRegisterForm(FlaskForm):
         FileAllowed(['jpg', 'jpeg', 'png', 'pdf'], 'Images or PDF only!')
     ])
 
-    # Admin Credentials Info
-    admin_first_name = StringField('Admin First Name', validators=[
-        DataRequired(message="Admin first name is required"),
-        Length(min=2, max=50)
-    ])
-    admin_last_name = StringField('Admin Last Name', validators=[
-        DataRequired(message="Admin last name is required"),
-        Length(min=2, max=50)
-    ])
-    admin_email = StringField('Admin Email Address', validators=[
-        DataRequired(message="Admin email is required"),
-        Email(message="Invalid email address")
-    ])
-    admin_phone = StringField('Admin Phone Number', validators=[
-        DataRequired(message="Admin phone number is required"),
-        Regexp(r'^\+?[0-9]{10,15}$', message="Phone number must be between 10 to 15 digits")
-    ])
-    admin_password = PasswordField('Password', validators=[
-        DataRequired(message="Password is required"),
-        Length(min=6, message="Password must be at least 6 characters long")
-    ])
-    admin_confirm_password = PasswordField('Confirm Password', validators=[
-        DataRequired(message="Please confirm your password"),
-        EqualTo('admin_password', message="Passwords must match")
-    ])
-    
     submit = SubmitField('Submit Registration')
-
-    def validate_admin_email(self, admin_email):
-        user = User.query.filter_by(email=admin_email.data).first()
-        if user:
-            raise ValidationError('Admin email address is already registered.')
             
     def validate_registration_number(self, registration_number):
         from app.models.hospital import Hospital

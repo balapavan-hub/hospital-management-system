@@ -34,3 +34,8 @@ class Hospital(db.Model):
 
     def __repr__(self):
         return f"<Hospital {self.name}>"
+
+    @property
+    def admin_user(self):
+        from app.models.user import User
+        return User.query.filter_by(hospital_id=self.id, role='HospitalAdmin').first()

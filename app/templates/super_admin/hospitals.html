@@ -79,10 +79,15 @@
                                         {% endif %}
                                         
                                         {% if hosp.status == 'Approved' %}
-                                            <form action="{{ url_for('super_admin.change_hospital_status', id=hosp.id, new_status='Suspended') }}" method="POST">
+                                            <form action="{{ url_for('super_admin.change_hospital_status', id=hosp.id, new_status='Suspended') }}" method="POST" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-sm btn-warning text-dark">Suspend</button>
                                             </form>
+                                            {% if not hosp.admin_user %}
+                                                <a href="{{ url_for('super_admin.create_admin', id=hosp.id) }}" class="btn btn-sm btn-primary">Set Admin</a>
+                                            {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary small p-2" title="{{ hosp.admin_user.email }}">Admin Active</span>
+                                            {% endif %}
                                         {% endif %}
 
                                         {% if hosp.status != 'Rejected' and hosp.status != 'Approved' %}

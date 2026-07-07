@@ -88,31 +88,10 @@ def register_hospital():
             status='Pending'
         )
         db.session.add(hospital)
-        db.session.flush()
-        
-        # Create Hospital Admin User
-        user = User(
-            email=form.admin_email.data.strip(),
-            role='HospitalAdmin',
-            hospital_id=hospital.id
-        )
-        user.set_password(form.admin_password.data)
-        db.session.add(user)
-        db.session.flush()
-        
-        # Create Hospital Admin Profile
-        hosp_admin = HospitalAdmin(
-            user_id=user.id,
-            hospital_id=hospital.id,
-            first_name=form.admin_first_name.data.strip(),
-            last_name=form.admin_last_name.data.strip(),
-            phone=form.admin_phone.data.strip()
-        )
-        db.session.add(hosp_admin)
         db.session.commit()
         
-        AuditService.log_action(user.id, f"Registered hospital '{hospital.name}' (Pending Super Admin approval)", request.remote_addr)
-        flash('Hospital registration submitted successfully! Staff login will be activated once Platform Super Admin approves the hospital.', 'success')
+        AuditService.log_action(None, f"Registered hospital '{hospital.name}' (Pending Super Admin approval)", request.remote_addr)
+        flash('Hospital registration submitted successfully! Login credentials will be provisioned by the Platform Super Admin upon approval.', 'success')
         return redirect(url_for('auth.login'))
         
     return render_template('auth/register_hospital.html', form=form)

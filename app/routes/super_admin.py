@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.models import db
 from app.models.hospital import Hospital
-from app.models.user import User, Patient, Doctor
+from app.models.user import User, Patient, Doctor, HospitalAdmin
 from app.models.audit_log import AuditLog
 from app.models.appointment import Appointment
 from app.models.billing import Bill
@@ -94,3 +94,54 @@ def audit_logs():
     page = request.args.get('page', 1, type=int)
     pagination = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=20)
     return render_template('super_admin/audit_logs.html', pagination=pagination)
+
+@super_admin_bp.route('/hospitals/<int:id>/create-admin', methods=['GET', 'POST'])
+def create_admin(id):
+    hospital = Hospital.query.get_or_404(id)
+    if hospital.status != 'Approved':
+        flash('Admin credentials can only be set for approved hospitals.', 'danger')
+        return redirect(url_for('super_admin.hospitals'))
+        
+    if hospital.admin_user:
+        flash('This hospital already has an administrator user.', 'warning')
+        return redirect(url_for('super_admin.hospitals'))
+
+    if request.method == 'POST':
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        password = request.form.get('password', '').strip()
+
+        if not (first_name and last_name and email and phone and password):
+            flash('All fields are required to create administrator credentials.', 'danger')
+            return render_template('super_admin/create_admin.html', hospital=hospital)
+
+        # Check duplicate email
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email address is already in use by another user.', 'danger')
+            return render_template('super_admin/create_admin.html', hospital=hospital)
+
+        # Create user
+        user = User(email=email, role='HospitalAdmin', hospital_id=hospital.id)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.flush()
+
+        # Create admin profile
+        admin_profile = HospitalAdmin(
+            user_id=user.id,
+            hospital_id=hospital.id,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone
+        )
+        db.session.add(admin_profile)
+        db.session.commit()
+
+        AuditService.log_action(current_user.id, f"Created admin credentials for hospital '{hospital.name}' (User ID: {user.id})", request.remote_addr)
+        flash(f"Administrator credentials for '{hospital.name}' created successfully!", 'success')
+        return redirect(url_for('super_admin.hospitals'))
+
+    return render_template('super_admin/create_admin.html', hospital=hospital)

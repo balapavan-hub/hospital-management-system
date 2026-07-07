@@ -128,61 +128,6 @@
                             </div>
                         </div>
 
-                        <!-- Section 2: Admin Credentials -->
-                        <h5 class="fw-bold mb-3 mt-5 text-primary"><i class="bi bi-person-badge me-2"></i>2. Administrator Account Details</h5>
-                        <hr class="mb-4">
-
-                        <div class="row mb-3 g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">First Name *</label>
-                                {{ form.admin_first_name(class="form-control", placeholder="Admin first name") }}
-                                {% for error in form.admin_first_name.errors %}
-                                    <div class="text-danger small mt-1">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Last Name *</label>
-                                {{ form.admin_last_name(class="form-control", placeholder="Admin last name") }}
-                                {% for error in form.admin_last_name.errors %}
-                                    <div class="text-danger small mt-1">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="row mb-3 g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Admin Login Email *</label>
-                                {{ form.admin_email(class="form-control", placeholder="admin@hospital.com") }}
-                                {% for error in form.admin_email.errors %}
-                                    <div class="text-danger small mt-1">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Admin Phone Number *</label>
-                                {{ form.admin_phone(class="form-control", placeholder="Mobile number") }}
-                                {% for error in form.admin_phone.errors %}
-                                    <div class="text-danger small mt-1">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="row mb-4 g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Login Password *</label>
-                                {{ form.admin_password(class="form-control", placeholder="Minimum 6 characters") }}
-                                {% for error in form.admin_password.errors %}
-                                    <div class="text-danger small mt-1">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-secondary">Confirm Password *</label>
-                                {{ form.admin_confirm_password(class="form-control", placeholder="Re-enter password") }}
-                                {% for error in form.admin_confirm_password.errors %}
-                                    <div class="text-danger small mt-1">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
                         <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold fs-5 shadow">
                             <i class="bi bi-cloud-arrow-up-fill me-2"></i>Submit Organization Registration
                         </button>

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Create Administrator Credentials - MediConnect India{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white">
+                <div class="card-header bg-white border-0 py-3 d-flex align-items-center">
+                    <a href="{{ url_for('super_admin.hospitals') }}" class="btn btn-link p-0 me-3 text-decoration-none text-dark fs-4"><i class="bi bi-arrow-left"></i></a>
+                    <h5 class="mb-0 fw-bold">Provision Admin Credentials</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info border-0 rounded-3 small mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        Set up the first administrator credentials for <strong>{{ hospital.name }}</strong> (Registration ID: <code>{{ hospital.registration_number }}</code>).
+                    </div>
+                    
+                    <form action="{{ url_for('super_admin.create_admin', id=hospital.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">Admin Profile details</h6>
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">First Name *</label>
+                                <input type="text" name="first_name" class="form-control" placeholder="e.g. John" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Last Name *</label>
+                                <input type="text" name="last_name" class="form-control" placeholder="e.g. Doe" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Contact Phone Number *</label>
+                            <input type="text" name="phone" class="form-control" placeholder="e.g. 9876543210" required>
+                        </div>
+
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 mt-4">Security Credentials</h6>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Login Email Address *</label>
+                            <input type="email" name="email" class="form-control" placeholder="admin@hospital.com" required>
+                            <div class="form-text text-muted small">Must be unique across the platform.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Login Password *</label>
+                            <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-bold">
+                            <i class="bi bi-shield-check me-1"></i>Create & Save Credentials
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
