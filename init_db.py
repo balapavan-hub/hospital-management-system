@@ -5,14 +5,16 @@ from app.models.setting import SystemSetting
 
 def seed_database(app):
     with app.app_context():
-        print("Starting Database Initialization...")
-        print(f"Using database: {app.config['SQLALCHEMY_DATABASE_URI']}")
-        
-        # Drop all tables first for a clean migration to the SaaS multi-tenant schema
-        print("Dropping all existing tables for a clean multi-tenant migration...")
-        db.drop_all()
+        # Only initialize if the database is empty (first run)
+        # Check if the Super Admin already exists — if yes, skip seeding
         db.create_all()
-        print("Database tables created successfully.")
+        
+        existing_admin = User.query.filter_by(role='SuperAdmin').first()
+        if existing_admin:
+            print("Database already initialized. Skipping seed.")
+            return
+        
+        print("First run detected — initializing database...")
 
         # 1. Seed System Settings
         print("Seeding default settings...")
