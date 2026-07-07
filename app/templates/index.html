@@ -553,12 +553,10 @@
             <div class="collapse navbar-collapse" id="navbarText">
                 <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-1 gap-lg-3">
                     <li class="nav-item"><a class="nav-link nav-link-custom" href="#home">Home</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#features">Features</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#solutions">Solutions</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#workflow">Hospitals</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#pricing">Pricing</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#solutions">Previews</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#pricing">Metrics</a></li>
                     <li class="nav-item"><a class="nav-link nav-link-custom" href="#security">Security</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#about">About</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn btn-link p-0 theme-toggle-btn text-secondary" id="theme-toggle" title="Toggle Light/Dark Theme">
@@ -627,7 +625,7 @@
                         </p>
                         <div class="d-flex flex-wrap gap-3">
                             <a href="{{ url_for('auth.register_hospital') }}" class="btn btn-primary btn-lg px-4 py-3 rounded-3 shadow-sm fw-semibold btn-ripple">Get Started</a>
-                            <a href="#features" class="btn btn-outline-secondary btn-lg px-4 py-3 rounded-3 fw-semibold btn-ripple">Explore Platform</a>
+                            <a href="#solutions" class="btn btn-outline-secondary btn-lg px-4 py-3 rounded-3 fw-semibold btn-ripple">Explore Platform</a>
                         </div>
                     </div>
                     
@@ -707,83 +705,6 @@
             </div>
         </header>
     </div>
-
-    <!-- Platform Overview Section -->
-    <section class="section-padding bg-white scroll-trigger" id="features">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="text-primary fw-bold text-uppercase tracking-wider">Comprehensive Ecosystem</span>
-                <h2 class="section-title mt-2">Enterprise-Grade Healthcare Solutions</h2>
-                <p class="section-subtitle">Secure modular systems designed to connect clinical workflows and reduce medical administrative burdens.</p>
-            </div>
-            
-            <div class="row g-4 stagger-container">
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-diagram-3 enterprise-icon"></i>
-                        <h5 class="fw-bold">Hospital Network</h5>
-                        <p class="text-secondary small mb-0">Isolate organization-level data while enabling secure information exchange with diagnostic centers.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-folder-check enterprise-icon"></i>
-                        <h5 class="fw-bold">Unified Patient Records</h5>
-                        <p class="text-secondary small mb-0">Centralized electronic medical records (EMR) accessible securely by authorized practitioners.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-calendar3 enterprise-icon"></i>
-                        <h5 class="fw-bold">Appointment Management</h5>
-                        <p class="text-secondary small mb-0">Real-time scheduling and OPD calendar orchestration for clinical staff and patients.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-building-gear enterprise-icon"></i>
-                        <h5 class="fw-bold">Laboratory Integration</h5>
-                        <p class="text-secondary small mb-0">Digitize sample tracking, reference ranges, and dispatch verified patient lab results securely.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-bag-plus enterprise-icon"></i>
-                        <h5 class="fw-bold">Pharmacy Integration</h5>
-                        <p class="text-secondary small mb-0">Automate stock inventory, manage suppliers, and fulfill digital prescriptions paperlessly.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-receipt-cutoff enterprise-icon"></i>
-                        <h5 class="fw-bold">Consolidated Billing</h5>
-                        <p class="text-secondary small mb-0">Itemized invoicing, automated GST calculations, and records of receipts for all billing executive duties.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-graph-up-arrow enterprise-icon"></i>
-                        <h5 class="fw-bold">Enterprise Analytics</h5>
-                        <p class="text-secondary small mb-0">Real-time indicators tracking clinical performance, growth indices, and monthly financial collections.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-shield-lock-fill enterprise-icon"></i>
-                        <h5 class="fw-bold">Secure Data Sharing</h5>
-                        <p class="text-secondary small mb-0">All data transfers follow encryption protocols to comply with Indian healthcare privacy mandates.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="enterprise-card h-100">
-                        <i class="bi bi-person-lock enterprise-icon"></i>
-                        <h5 class="fw-bold">Role-Based Access Control</h5>
-                        <p class="text-secondary small mb-0">Granular permissions configured dynamically for Doctors, Nurses, Technicians, and Admin accounts.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Solutions & Dashboard Previews Section -->
     <section class="section-padding scroll-trigger" id="solutions">
@@ -865,52 +786,6 @@
         </div>
     </section>
 
-    <!-- Workflow / How it works Section -->
-    <section class="section-padding bg-white scroll-trigger" id="workflow">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="text-primary fw-bold text-uppercase tracking-wider">Deployment Pipeline</span>
-                <h2 class="section-title mt-2">Onboarding & Operational Workflow</h2>
-                <p class="section-subtitle">How organizations integrate and collaborate on MediConnect India.</p>
-            </div>
-            
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="workflow-timeline">
-                        <div class="workflow-step">
-                            <h5 class="fw-bold text-primary">Step 1: Hospital Registration</h5>
-                            <p class="text-secondary">Organizations register online, providing credentials and licensing credentials to verify clinical authenticity.</p>
-                        </div>
-                        <div class="workflow-step">
-                            <h5 class="fw-bold text-primary">Step 2: Platform Verification</h5>
-                            <p class="text-secondary">Platform Super Administrators audit the credentials to approve registration and secure tenant authenticity.</p>
-                        </div>
-                        <div class="workflow-step">
-                            <h5 class="fw-bold text-primary">Step 3: Tenant Provisioning</h5>
-                            <p class="text-secondary">Approved hospitals receive a secure, dedicated tenant space and provision the initial Hospital Admin credentials.</p>
-                        </div>
-                        <div class="workflow-step">
-                            <h5 class="fw-bold text-primary">Step 4: Workforce Setup</h5>
-                            <p class="text-secondary">Hospital Administrators register clinicians, nurses, pharmacists, and laboratory staff under dedicated roles.</p>
-                        </div>
-                        <div class="workflow-step">
-                            <h5 class="fw-bold text-primary">Step 5: Patient Engagement</h5>
-                            <p class="text-secondary">Patients search partner networks, schedule appointments, and access digital prescriptions securely.</p>
-                        </div>
-                        <div class="workflow-step" style="padding-bottom: 0;">
-                            <h5 class="fw-bold text-primary">Step 6: Integrated Healthcare Delivery</h5>
-                            <p class="text-secondary">Prescriptions, billings, and laboratory reports move instantaneously inside the secure central pipeline.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Who Can Use Section -->
-    <section class="section-padding scroll-trigger">
-        <div class="container">
-            <div class="text-center mb-5">
                 <span class="text-primary fw-bold text-uppercase tracking-wider">Platform Stakeholders</span>
                 <h2 class="section-title mt-2">Connecting the Healthcare Ecosystem</h2>
                 <p class="section-subtitle">Flexible integration interfaces engineered for all nodes in the medical pathway.</p>
@@ -1109,10 +984,10 @@
                 <div class="col-md-3 col-lg-2">
                     <div class="footer-title">Solutions</div>
                     <ul class="list-unstyled d-flex flex-column gap-2">
-                        <li><a class="footer-link" href="#features">Hospital Networks</a></li>
-                        <li><a class="footer-link" href="#features">Practitioner Portals</a></li>
-                        <li><a class="footer-link" href="#features">Laboratory Suites</a></li>
-                        <li><a class="footer-link" href="#features">Pharmacy Systems</a></li>
+                        <li><a class="footer-link" href="#solutions">Hospital Network Console</a></li>
+                        <li><a class="footer-link" href="#solutions">Practitioner Portal</a></li>
+                        <li><a class="footer-link" href="#solutions">Laboratory Suite</a></li>
+                        <li><a class="footer-link" href="#solutions">Pharmacy System</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3 col-lg-2">
@@ -1121,7 +996,7 @@
                         <li><a class="footer-link" href="#security">AES Encryption</a></li>
                         <li><a class="footer-link" href="#security">Audit Trails</a></li>
                         <li><a class="footer-link" href="#solutions">Developer APIs</a></li>
-                        <li><a class="footer-link" href="#pricing">Enterprise Pricing</a></li>
+                        <li><a class="footer-link" href="#pricing">Metrics Engine</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3 col-lg-2">
