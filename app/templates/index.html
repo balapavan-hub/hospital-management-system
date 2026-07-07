@@ -648,52 +648,52 @@
                                 </div>
                                 
                                 <!-- Interconnected hospital nodes -->
-                                <div class="network-node node-top-left" title="Hospital Network">
+                                <div class="network-node node-top-left" title="{% if approved_hospitals|length > 0 %}{{ approved_hospitals[0].name }}{% else %}Hospital Node 01{% endif %}">
                                     <i class="bi bi-hospital"></i>
                                 </div>
-                                <div class="network-node node-top-right" title="Diagnostic Laboratories">
-                                    <i class="bi bi-clipboard2-pulse"></i>
+                                <div class="network-node node-top-right" title="{% if approved_hospitals|length > 1 %}{{ approved_hospitals[1].name }}{% else %}Hospital Node 02{% endif %}">
+                                    <i class="bi bi-hospital"></i>
                                 </div>
-                                <div class="network-node node-bottom-left" title="Retail Pharmacies">
-                                    <i class="bi bi-capsule"></i>
+                                <div class="network-node node-bottom-left" title="{% if approved_hospitals|length > 2 %}{{ approved_hospitals[2].name }}{% else %}Hospital Node 03{% endif %}">
+                                    <i class="bi bi-hospital"></i>
                                 </div>
-                                <div class="network-node node-bottom-right" title="Patient Records Portal">
-                                    <i class="bi bi-person-fill"></i>
+                                <div class="network-node node-bottom-right" title="{% if approved_hospitals|length > 3 %}{{ approved_hospitals[3].name }}{% else %}Hospital Node 04{% endif %}">
+                                    <i class="bi bi-hospital"></i>
                                 </div>
-                                <div class="network-node node-mid-left" title="Clinics & Practitioners">
-                                    <i class="bi bi-heart-pulse"></i>
+                                <div class="network-node node-mid-left" title="{% if approved_hospitals|length > 4 %}{{ approved_hospitals[4].name }}{% else %}Hospital Node 05{% endif %}">
+                                    <i class="bi bi-hospital"></i>
                                 </div>
-                                <div class="network-node node-mid-right" title="Analytics Engine">
-                                    <i class="bi bi-bar-chart"></i>
+                                <div class="network-node node-mid-right" title="{% if approved_hospitals|length > 5 %}{{ approved_hospitals[5].name }}{% else %}Hospital Node 06{% endif %}">
+                                    <i class="bi bi-hospital"></i>
                                 </div>
 
-                                <!-- Floating minimal character vector cards -->
+                                <!-- Floating minimal character vector cards representing hospital connections -->
                                 <div class="character-card char-doctor" style="transform: translateY(0);">
-                                    <div class="char-img text-primary"><i class="bi bi-person-circle"></i></div>
+                                    <div class="char-img text-primary"><i class="bi bi-hospital-fill"></i></div>
                                     <div>
-                                        <div class="char-title">Doctor Portal</div>
-                                        <div class="char-status">Prescribing</div>
+                                        <div class="char-title">{% if approved_hospitals|length > 0 %}{{ approved_hospitals[0].name }}{% else %}Hospital Node 01{% endif %}</div>
+                                        <div class="char-status">Syncing Records</div>
                                     </div>
                                 </div>
                                 <div class="character-card char-nurse">
-                                    <div class="char-img text-success"><i class="bi bi-heart-pulse-fill"></i></div>
+                                    <div class="char-img text-success"><i class="bi bi-hospital-fill"></i></div>
                                     <div>
-                                        <div class="char-title">Nursing Station</div>
-                                        <div class="char-status">Logging BP</div>
+                                        <div class="char-title">{% if approved_hospitals|length > 1 %}{{ approved_hospitals[1].name }}{% else %}Hospital Node 02{% endif %}</div>
+                                        <div class="char-status">Pipeline Active</div>
                                     </div>
                                 </div>
                                 <div class="character-card char-tech">
-                                    <div class="char-img text-warning"><i class="bi bi-file-earmark-medical"></i></div>
+                                    <div class="char-img text-warning"><i class="bi bi-hospital-fill"></i></div>
                                     <div>
-                                        <div class="char-title">Laboratory Desk</div>
-                                        <div class="char-status">Report Ready</div>
+                                        <div class="char-title">{% if approved_hospitals|length > 2 %}{{ approved_hospitals[2].name }}{% else %}Hospital Node 03{% endif %}</div>
+                                        <div class="char-status">Encrypted Link</div>
                                     </div>
                                 </div>
                                 <div class="character-card char-pharmacist">
-                                    <div class="char-img text-info"><i class="bi bi-prescription2"></i></div>
+                                    <div class="char-img text-info"><i class="bi bi-hospital-fill"></i></div>
                                     <div>
-                                        <div class="char-title">Pharmacy Hub</div>
-                                        <div class="char-status">Dispensing</div>
+                                        <div class="char-title">{% if approved_hospitals|length > 3 %}{{ approved_hospitals[3].name }}{% else %}Hospital Node 04{% endif %}</div>
+                                        <div class="char-status">OPD Synced</div>
                                     </div>
                                 </div>
                             </div>

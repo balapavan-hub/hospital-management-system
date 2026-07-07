@@ -21,6 +21,7 @@ def index():
     # Load departments and doctors to display on landing page
     departments = Department.query.limit(6).all()
     doctors = Doctor.query.filter_by(availability_status='Available').limit(4).all()
+    approved_hospitals = Hospital.query.filter_by(status='Approved').all()
     
     # Real dynamic stats
     stats = {
@@ -37,7 +38,8 @@ def index():
         'index.html', 
         departments=departments, 
         doctors=doctors,
-        stats=stats
+        stats=stats,
+        approved_hospitals=approved_hospitals
     )
 
 @main_bp.route('/toggle-theme')
