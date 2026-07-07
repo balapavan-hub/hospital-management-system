@@ -52,11 +52,20 @@ class DoctorForm(FlaskForm):
     ], default='Available')
     submit = SubmitField('Save Doctor')
 
-    def __init__(self, doctor_id=None, *args, **kwargs):
+    def __init__(self, doctor_id=None, hospital_id=None, *args, **kwargs):
         super(DoctorForm, self).__init__(*args, **kwargs)
         self.doctor_id = doctor_id
-        # Dynamic departments dropdown
-        self.department_id.choices = [(d.id, d.name) for d in Department.query.order_by(Department.name).all()]
+        
+        # Determine hospital_id from current_user if not explicitly passed
+        if not hospital_id:
+            from flask_login import current_user
+            if current_user and hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+                hospital_id = getattr(current_user, 'hospital_id', None)
+                
+        if hospital_id:
+            self.department_id.choices = [(d.id, d.name) for d in Department.query.filter_by(hospital_id=hospital_id).order_by(Department.name).all()]
+        else:
+            self.department_id.choices = []
 
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
