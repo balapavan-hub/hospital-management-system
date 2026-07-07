@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Platform Security Audit Logs - MediConnect India{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Platform Security Audit Logs</h1>
+        <p class="text-muted small">Centralized security logs recording all user and administrative events</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Hospital ID</th>
+                            <th>User ID</th>
+                            <th>Action Performed</th>
+                            <th>IP Address</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in pagination.items %}
+                            <tr>
+                                <td><code>#{{ log.id }}</code></td>
+                                <td>
+                                    {% if log.hospital_id %}
+                                        <span class="badge bg-secondary-subtle text-secondary">Org #{{ log.hospital_id }}</span>
+                                    {% else %}
+                                        <span class="badge bg-primary-subtle text-primary">System-Wide</span>
+                                    {% endif %}
+                                </td>
+                                <td><code>#{{ log.user_id or 'Guest/Anonymous' }}</code></td>
+                                <td class="fw-bold">{{ log.action }}</td>
+                                <td><code>{{ log.ip_address or 'Unknown' }}</code></td>
+                                <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No security events found.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+        <nav aria-label="Audit pagination">
+            <ul class="pagination justify-content-center">
+                {% for page in pagination.iter_pages() %}
+                    {% if page %}
+                        <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('super_admin.audit_logs', page=page) }}">{{ page }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

@@ -11,11 +11,17 @@ class LabPackage(db.Model):
     __tablename__ = 'lab_packages'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     cost = db.Column(db.Numeric(10, 2), nullable=False, default=0.00)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Unique constraint per hospital
+    __table_args__ = (
+        db.UniqueConstraint('hospital_id', 'name', name='unique_hospital_package'),
+    )
 
     # Relationships
     templates = db.relationship('LabTestTemplate', secondary=lab_package_tests, backref='packages')
@@ -28,19 +34,25 @@ class LabTestTemplate(db.Model):
     __tablename__ = 'lab_test_templates'
     
     id = db.Column(db.Integer, primary_key=True)
-    test_name = db.Column(db.String(100), unique=True, nullable=False)
-    test_category = db.Column(db.String(100), nullable=False) # Blood Test, Urine Test, Imaging, Cardiac, Pathology, etc.
-    normal_range_min = db.Column(db.Float, nullable=True)     # For numeric comparisons
-    normal_range_max = db.Column(db.Float, nullable=True)     # For numeric comparisons
-    normal_range_text = db.Column(db.String(200), nullable=True) # Text representation e.g. "70-100" or "Negative"
-    unit = db.Column(db.String(50), nullable=True)            # e.g. mg/dL, g/dL
-    age_min = db.Column(db.Integer, nullable=True, default=0) # Applies to age group
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
+    test_name = db.Column(db.String(100), nullable=False)
+    test_category = db.Column(db.String(100), nullable=False) # Blood Test, Urine Test, Imaging, etc.
+    normal_range_min = db.Column(db.Float, nullable=True)
+    normal_range_max = db.Column(db.Float, nullable=True)
+    normal_range_text = db.Column(db.String(200), nullable=True)
+    unit = db.Column(db.String(50), nullable=True)
+    age_min = db.Column(db.Integer, nullable=True, default=0)
     age_max = db.Column(db.Integer, nullable=True, default=150)
     gender = db.Column(db.String(10), nullable=True, default='Both') # Male, Female, Both
-    critical_range_min = db.Column(db.Float, nullable=True)   # Trigger critical alerts
+    critical_range_min = db.Column(db.Float, nullable=True)
     critical_range_max = db.Column(db.Float, nullable=True)
     cost = db.Column(db.Numeric(10, 2), nullable=False, default=0.00)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Unique constraint per hospital
+    __table_args__ = (
+        db.UniqueConstraint('hospital_id', 'test_name', name='unique_hospital_template'),
+    )
 
     def __repr__(self):
         return f"<LabTestTemplate {self.test_name}>"
@@ -49,25 +61,22 @@ class LabTest(db.Model):
     __tablename__ = 'lab_tests'
     
     id = db.Column(db.Integer, primary_key=True)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
     sample_id = db.Column(db.String(50), unique=True, nullable=False) # e.g. SAM-YYYYMMDD-XXXX
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id', ondelete='CASCADE'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id', ondelete='SET NULL'), nullable=True)
     lab_technician_id = db.Column(db.Integer, db.ForeignKey('lab_technicians.id', ondelete='SET NULL'), nullable=True)
     package_id = db.Column(db.Integer, db.ForeignKey('lab_packages.id', ondelete='SET NULL'), nullable=True)
-    
-    # If ordered as a single test (not package)
     single_template_id = db.Column(db.Integer, db.ForeignKey('lab_test_templates.id', ondelete='SET NULL'), nullable=True)
     
-    test_name = db.Column(db.String(150), nullable=False)     # Copy of test or package name
-    test_category = db.Column(db.String(100), nullable=False) # Copy of category
+    test_name = db.Column(db.String(150), nullable=False)
+    test_category = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    
-    status = db.Column(db.String(50), default='Sample Collected') # Sample Collected, Sample Received, Under Processing, Quality Check, Completed, Report Generated, Delivered
+    status = db.Column(db.String(50), default='Sample Collected')
     test_date = db.Column(db.DateTime, default=datetime.utcnow)
     result_date = db.Column(db.DateTime, nullable=True)
-    
     cost = db.Column(db.Numeric(10, 2), nullable=False, default=0.00)
-    payment_status = db.Column(db.String(50), default='Pending') # Paid, Pending
+    payment_status = db.Column(db.String(50), default='Pending')
     is_critical = db.Column(db.Boolean, default=False)
     remarks = db.Column(db.Text, nullable=True)
     interpretation = db.Column(db.Text, nullable=True)
@@ -88,9 +97,7 @@ class LabTestResult(db.Model):
     lab_test_id = db.Column(db.Integer, db.ForeignKey('lab_tests.id', ondelete='CASCADE'), nullable=False)
     template_id = db.Column(db.Integer, db.ForeignKey('lab_test_templates.id', ondelete='CASCADE'), nullable=False)
     observed_value = db.Column(db.String(100), nullable=False)
-    result_status = db.Column(db.String(50), default='Normal')  # Normal, Low, High, Critical
-    
-    # Snapshotted fields at the time of test to preserve history if template changes
+    result_status = db.Column(db.String(50), default='Normal')
     normal_range_used = db.Column(db.String(200), nullable=True)
     unit_used = db.Column(db.String(50), nullable=True)
 
@@ -104,12 +111,18 @@ class LabInventory(db.Model):
     __tablename__ = 'lab_inventory'
     
     id = db.Column(db.Integer, primary_key=True)
-    item_name = db.Column(db.String(100), unique=True, nullable=False)
-    category = db.Column(db.String(100), nullable=False) # Reagent, Chemical, Gloves, Masks, Syringes, Blood Collection Tubes, Test Kits
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
+    item_name = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(100), nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=0)
     unit = db.Column(db.String(50), nullable=False, default='units')
-    min_stock_level = db.Column(db.Integer, nullable=False, default=10) # Warning limit
+    min_stock_level = db.Column(db.Integer, nullable=False, default=10)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Unique constraint per hospital
+    __table_args__ = (
+        db.UniqueConstraint('hospital_id', 'item_name', name='unique_hospital_inventory'),
+    )
 
     def __repr__(self):
         return f"<LabInventory {self.item_name}>"

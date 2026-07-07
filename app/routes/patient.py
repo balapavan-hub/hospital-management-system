@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 
 from app.models import db
+from app.models.hospital import Hospital
 from app.models.user import Doctor, Patient
 from app.models.department import Department
 from app.models.appointment import Appointment
@@ -26,12 +27,21 @@ def patient_required():
 def dashboard():
     patient = current_user.patient
     if not patient:
-        flash('Patient profile not found!', 'danger')
-        return redirect(url_for('main.index'))
+        # Auto-create profile if user exists but profile does not
+        patient = Patient(
+            user_id=current_user.id,
+            first_name="General",
+            last_name="Patient",
+            phone="9876543210",
+            gender="Male",
+            date_of_birth=date(1990, 1, 1)
+        )
+        db.session.add(patient)
+        db.session.commit()
         
     today = date.today()
     
-    # Queries
+    # Retrieve all medical history, visits, prescriptions, bills globally across all hospitals
     upcoming_appointments = Appointment.query.filter(
         Appointment.patient_id == patient.id,
         Appointment.appointment_date >= today,
@@ -59,10 +69,60 @@ def dashboard():
         lab_tests=lab_tests
     )
 
+@patient_bp.route('/search-hospitals')
+def search_hospitals():
+    state_filter = request.args.get('state', '').strip()
+    city_filter = request.args.get('city', '').strip()
+    type_filter = request.args.get('type', '').strip()
+    search_q = request.args.get('search', '').strip()
+    
+    query = Hospital.query.filter_by(status='Approved')
+    
+    if state_filter:
+        query = query.filter(Hospital.state.like(f"%{state_filter}%"))
+    if city_filter:
+        query = query.filter(Hospital.city.like(f"%{city_filter}%"))
+    if type_filter:
+        query = query.filter_by(hospital_type=type_filter)
+    if search_q:
+        query = query.filter(
+            (Hospital.name.like(f"%{search_q}%")) |
+            (Hospital.address.like(f"%{search_q}%"))
+        )
+        
+    hospitals_list = query.all()
+    
+    # Distinct states and cities for filter dropdowns
+    states = db.session.query(Hospital.state).filter_by(status='Approved').distinct().all()
+    cities = db.session.query(Hospital.city).filter_by(status='Approved').distinct().all()
+    
+    return render_template(
+        'patient/search_hospitals.html',
+        hospitals=hospitals_list,
+        states=[s[0] for s in states],
+        cities=[c[0] for c in cities],
+        selected_state=state_filter,
+        selected_city=city_filter,
+        selected_type=type_filter,
+        search_query=search_q
+    )
+
 @patient_bp.route('/book-appointment', methods=['GET', 'POST'])
 def book_appointment():
     patient = current_user.patient
     form = BookAppointmentForm()
+    
+    hospital_id = request.args.get('hospital_id', type=int)
+    if not hospital_id:
+        # Fallback to first approved hospital
+        hosp = Hospital.query.filter_by(status='Approved').first()
+        hospital_id = hosp.id if hosp else 1
+        
+    hospital = Hospital.query.get_or_404(hospital_id)
+    
+    # Load departments and doctors inside the selected hospital
+    departments = Department.query.filter_by(hospital_id=hospital_id).all()
+    form.doctor_id.choices = [(d.id, d.full_name) for d in Doctor.query.filter_by(hospital_id=hospital_id).all()]
     
     if form.validate_on_submit():
         doc_id = form.doctor_id.data
@@ -72,10 +132,13 @@ def book_appointment():
         # Check slot availability
         if not AppointmentService.is_slot_available(doc_id, appt_date, slot):
             flash('The selected time slot is no longer available. Please select a different slot.', 'danger')
-            return render_template('patient/book_appointment.html', form=form)
+            return render_template('patient/book_appointment.html', form=form, hospital=hospital, departments=departments)
             
+        doctor = Doctor.query.get(doc_id)
+        
         # Create Appointment
         appt = Appointment(
+            hospital_id=hospital_id,
             patient_id=patient.id,
             doctor_id=doc_id,
             appointment_date=appt_date,
@@ -86,14 +149,12 @@ def book_appointment():
         db.session.add(appt)
         db.session.commit()
         
-        doctor = Doctor.query.get(doc_id)
-        
         # Audit & Notification
-        AuditService.log_action(current_user.id, f"Booked Appointment #{appt.id} with {doctor.full_name}")
+        AuditService.log_action(current_user.id, f"Booked Appointment #{appt.id} with {doctor.full_name} at Hospital '{hospital.name}'")
         NotificationService.create_notification(
             current_user.id,
             "Appointment Booked Successfully",
-            f"Your appointment with {doctor.full_name} is booked for {appt_date} at {slot}. Status: Pending Confirmation."
+            f"Your appointment with {doctor.full_name} at {hospital.name} is booked for {appt_date} at {slot}. Status: Pending Confirmation."
         )
         NotificationService.create_notification(
             doctor.user_id,
@@ -101,10 +162,10 @@ def book_appointment():
             f"Patient {patient.full_name} has requested an appointment on {appt_date} at {slot}."
         )
         
-        flash('Your appointment request has been submitted successfully!', 'success')
+        flash(f'Your appointment request at {hospital.name} has been submitted successfully!', 'success')
         return redirect(url_for('patient.dashboard'))
         
-    return render_template('patient/book_appointment.html', form=form)
+    return render_template('patient/book_appointment.html', form=form, hospital=hospital, departments=departments)
 
 @patient_bp.route('/cancel-appointment/<int:id>', methods=['POST'])
 def cancel_appointment(id):
@@ -212,9 +273,24 @@ def download_bill_pdf(id):
     )
 
 # --- AJAX APIs ---
+@patient_bp.route('/api/get-departments/<int:hospital_id>')
+def api_get_departments(hospital_id):
+    depts = Department.query.filter_by(hospital_id=hospital_id).all()
+    return jsonify([
+        {'id': d.id, 'name': d.name} for d in depts
+    ])
+
 @patient_bp.route('/api/get-doctors/<int:dept_id>')
 def api_get_doctors(dept_id):
+    # This was a previous route. For safety we support both dept_id filtering and hospital_id filtering.
     docs = Doctor.query.filter_by(department_id=dept_id, availability_status='Available').all()
+    return jsonify([
+        {'id': d.id, 'name': d.full_name, 'specialization': d.specialization} for d in docs
+    ])
+
+@patient_bp.route('/api/get-doctors/<int:hospital_id>/<int:dept_id>')
+def api_get_hospital_doctors(hospital_id, dept_id):
+    docs = Doctor.query.filter_by(hospital_id=hospital_id, department_id=dept_id, availability_status='Available').all()
     return jsonify([
         {'id': d.id, 'name': d.full_name, 'specialization': d.specialization} for d in docs
     ])
@@ -260,12 +336,10 @@ def lab_trends():
     completed_tests = LabTest.query.filter_by(patient_id=patient.id).filter(LabTest.status.in_(['Completed', 'Delivered'])).order_by(LabTest.result_date.asc()).all()
     
     # Structure data for Chart.js
-    # trends = { 'Hemoglobin': {'dates': [...], 'values': [...], 'unit': 'g/dL'} }
     trends = {}
     for test in completed_tests:
         for result in test.results:
             param_name = result.template.test_name
-            # Try to convert observed value to float for charting
             try:
                 val = float(result.observed_value)
                 if param_name not in trends:
@@ -273,8 +347,6 @@ def lab_trends():
                 trends[param_name]['dates'].append(test.result_date.strftime('%d-%b-%Y'))
                 trends[param_name]['values'].append(val)
             except ValueError:
-                # Skip non-numeric values for charting
                 continue
                 
     return render_template('patient/lab_trends.html', trends=trends, completed_tests=completed_tests)
-

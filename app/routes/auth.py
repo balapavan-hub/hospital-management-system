@@ -4,10 +4,11 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 
 from app.models import db
-from app.models.user import User, Patient
+from app.models.user import User, Patient, HospitalAdmin
+from app.models.hospital import Hospital
 from app.forms import (
     LoginForm, PatientRegisterForm, ForgotPasswordForm, 
-    ResetPasswordForm, UpdateProfileForm, ChangePasswordForm
+    ResetPasswordForm, UpdateProfileForm, ChangePasswordForm, HospitalRegisterForm
 )
 from app.services import AuditService, NotificationService
 
@@ -26,6 +27,12 @@ def login():
                 flash('Your account has been deactivated. Please contact support.', 'danger')
                 return render_template('auth/login.html', form=form)
                 
+            if user.hospital_id:
+                hospital = Hospital.query.get(user.hospital_id)
+                if hospital and hospital.status != 'Approved':
+                    flash(f'Your hospital ("{hospital.name}") is currently {hospital.status}. Login is disabled until it is approved.', 'warning')
+                    return render_template('auth/login.html', form=form)
+                    
             login_user(user, remember=form.remember_me.data)
             
             # Audit log
@@ -42,6 +49,73 @@ def login():
             flash('Invalid email or password.', 'danger')
             
     return render_template('auth/login.html', form=form)
+
+
+@auth_bp.route('/register-hospital', methods=['GET', 'POST'])
+def register_hospital():
+    if current_user.is_authenticated:
+        return redirect_role_dashboard(current_user.role)
+        
+    form = HospitalRegisterForm()
+    if form.validate_on_submit():
+        logo_filename = 'default_hospital.png'
+        if form.logo.data:
+            file = form.logo.data
+            logo_filename = secure_filename(f"hospital_logo_{file.filename}")
+            file.save(os.path.join(current_app.config['PROFILE_PICS_FOLDER'], logo_filename))
+            
+        license_filename = None
+        if form.license_document.data:
+            file = form.license_document.data
+            license_filename = secure_filename(f"hospital_license_{file.filename}")
+            file.save(os.path.join(current_app.config['REPORTS_FOLDER'], license_filename))
+            
+        # Create Hospital
+        hospital = Hospital(
+            name=form.hospital_name.data.strip(),
+            registration_number=form.registration_number.data.strip(),
+            hospital_type=form.hospital_type.data,
+            address=form.address.data.strip(),
+            state=form.state.data.strip(),
+            district=form.district.data.strip(),
+            city=form.city.data.strip(),
+            pincode=form.pincode.data.strip(),
+            email=form.email.data.strip(),
+            phone=form.phone.data.strip(),
+            website=form.website.data.strip() if form.website.data else None,
+            logo_path=logo_filename,
+            license_document=license_filename,
+            status='Pending'
+        )
+        db.session.add(hospital)
+        db.session.flush()
+        
+        # Create Hospital Admin User
+        user = User(
+            email=form.admin_email.data.strip(),
+            role='HospitalAdmin',
+            hospital_id=hospital.id
+        )
+        user.set_password(form.admin_password.data)
+        db.session.add(user)
+        db.session.flush()
+        
+        # Create Hospital Admin Profile
+        hosp_admin = HospitalAdmin(
+            user_id=user.id,
+            hospital_id=hospital.id,
+            first_name=form.admin_first_name.data.strip(),
+            last_name=form.admin_last_name.data.strip(),
+            phone=form.admin_phone.data.strip()
+        )
+        db.session.add(hosp_admin)
+        db.session.commit()
+        
+        AuditService.log_action(user.id, f"Registered hospital '{hospital.name}' (Pending Super Admin approval)", request.remote_addr)
+        flash('Hospital registration submitted successfully! Staff login will be activated once Platform Super Admin approves the hospital.', 'success')
+        return redirect(url_for('auth.login'))
+        
+    return render_template('auth/register_hospital.html', form=form)
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -211,14 +285,22 @@ def read_all_notifications():
 
 def redirect_role_dashboard(role):
     """Helper function to redirect users to their respective dashboard blueprint."""
-    if role == 'Admin':
+    if role == 'SuperAdmin':
+        return redirect(url_for('super_admin.dashboard'))
+    elif role == 'HospitalAdmin':
         return redirect(url_for('admin.dashboard'))
     elif role == 'Doctor':
         return redirect(url_for('doctor.dashboard'))
+    elif role == 'Nurse':
+        return redirect(url_for('nurse.dashboard'))
     elif role == 'Receptionist':
         return redirect(url_for('receptionist.dashboard'))
-    elif role == 'Patient':
-        return redirect(url_for('patient.dashboard'))
     elif role == 'LabTechnician':
         return redirect(url_for('lab_technician.dashboard'))
+    elif role == 'Pharmacist':
+        return redirect(url_for('pharmacist.dashboard'))
+    elif role == 'BillingExecutive':
+        return redirect(url_for('receptionist.dashboard')) # Billing executive shares Receptionist's portal
+    elif role == 'Patient':
+        return redirect(url_for('patient.dashboard'))
     return redirect(url_for('main.index'))

@@ -136,3 +136,86 @@ class ChangePasswordForm(FlaskForm):
         EqualTo('new_password', message="Passwords must match")
     ])
     submit = SubmitField('Change Password')
+
+
+class HospitalRegisterForm(FlaskForm):
+    # Hospital Info
+    hospital_name = StringField('Hospital Name', validators=[
+        DataRequired(message="Hospital name is required"),
+        Length(min=3, max=150)
+    ])
+    registration_number = StringField('Registration / License Number', validators=[
+        DataRequired(message="Registration number is required"),
+        Length(max=100)
+    ])
+    hospital_type = SelectField('Hospital Type', choices=[
+        ('Private', 'Private'),
+        ('Government', 'Government'),
+        ('Clinic', 'Clinic'),
+        ('Speciality Hospital', 'Speciality Hospital')
+    ], validators=[DataRequired()])
+    address = TextAreaField('Address', validators=[DataRequired()])
+    state = StringField('State', validators=[DataRequired(), Length(max=100)])
+    district = StringField('District', validators=[DataRequired(), Length(max=100)])
+    city = StringField('City', validators=[DataRequired(), Length(max=100)])
+    pincode = StringField('Pincode', validators=[
+        DataRequired(),
+        Regexp(r'^[0-9]{6}$', message="Pincode must be exactly 6 digits")
+    ])
+    email = StringField('Hospital Email', validators=[
+        DataRequired(),
+        Email(message="Invalid email address")
+    ])
+    phone = StringField('Hospital Phone', validators=[
+        DataRequired(),
+        Regexp(r'^\+?[0-9]{10,15}$', message="Phone number must be between 10 to 15 digits")
+    ])
+    website = StringField('Website', validators=[Optional(), Length(max=150)])
+    logo = FileField('Hospital Logo (PNG/JPG)', validators=[
+        Optional(),
+        FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')
+    ])
+    license_document = FileField('License Document (PDF/PDF/Images)', validators=[
+        Optional(),
+        FileAllowed(['jpg', 'jpeg', 'png', 'pdf'], 'Images or PDF only!')
+    ])
+
+    # Admin Credentials Info
+    admin_first_name = StringField('Admin First Name', validators=[
+        DataRequired(message="Admin first name is required"),
+        Length(min=2, max=50)
+    ])
+    admin_last_name = StringField('Admin Last Name', validators=[
+        DataRequired(message="Admin last name is required"),
+        Length(min=2, max=50)
+    ])
+    admin_email = StringField('Admin Email Address', validators=[
+        DataRequired(message="Admin email is required"),
+        Email(message="Invalid email address")
+    ])
+    admin_phone = StringField('Admin Phone Number', validators=[
+        DataRequired(message="Admin phone number is required"),
+        Regexp(r'^\+?[0-9]{10,15}$', message="Phone number must be between 10 to 15 digits")
+    ])
+    admin_password = PasswordField('Password', validators=[
+        DataRequired(message="Password is required"),
+        Length(min=6, message="Password must be at least 6 characters long")
+    ])
+    admin_confirm_password = PasswordField('Confirm Password', validators=[
+        DataRequired(message="Please confirm your password"),
+        EqualTo('admin_password', message="Passwords must match")
+    ])
+    
+    submit = SubmitField('Submit Registration')
+
+    def validate_admin_email(self, admin_email):
+        user = User.query.filter_by(email=admin_email.data).first()
+        if user:
+            raise ValidationError('Admin email address is already registered.')
+            
+    def validate_registration_number(self, registration_number):
+        from app.models.hospital import Hospital
+        hosp = Hospital.query.filter_by(registration_number=registration_number.data).first()
+        if hosp:
+            raise ValidationError('Registration number is already registered.')
+

@@ -32,7 +32,7 @@ class BillingService:
         }
 
     @staticmethod
-    def generate_bill(appointment_id, patient_id, consultation_fee=0, medicine_charges=0, lab_charges=0, other_charges=0, discount=0, status='Pending'):
+    def generate_bill(hospital_id, appointment_id, patient_id, consultation_fee=0, medicine_charges=0, lab_charges=0, other_charges=0, discount=0, status='Pending'):
         """
         Generate and persist a new bill in the database.
         """
@@ -41,6 +41,7 @@ class BillingService:
         )
         
         bill = Bill(
+            hospital_id=hospital_id,
             appointment_id=appointment_id if appointment_id != 0 else None,
             patient_id=patient_id,
             consultation_fee=consultation_fee,
@@ -58,7 +59,7 @@ class BillingService:
         return bill
 
     @staticmethod
-    def record_payment(bill_id, amount, payment_method, transaction_id=None):
+    def record_payment(hospital_id, bill_id, amount, payment_method, transaction_id=None):
         """
         Record a payment for a bill and mark the bill as paid.
         """
@@ -67,6 +68,7 @@ class BillingService:
             return None
             
         payment = Payment(
+            hospital_id=hospital_id,
             bill_id=bill_id,
             amount=amount,
             payment_method=payment_method,
@@ -75,8 +77,7 @@ class BillingService:
         
         db.session.add(payment)
         
-        # Mark bill status as Paid if total paid equals or exceeds grand_total
-        # For simplicity, we just mark it paid once a payment is made.
+        # Mark bill status as Paid once a payment is made.
         bill.status = 'Paid'
         db.session.commit()
         

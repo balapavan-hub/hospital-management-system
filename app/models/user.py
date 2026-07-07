@@ -9,7 +9,8 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum('Admin', 'Doctor', 'Receptionist', 'Patient', 'LabTechnician', name='user_roles'), nullable=False)
+    role = db.Column(db.String(50), nullable=False) # 'SuperAdmin', 'HospitalAdmin', 'Doctor', 'Nurse', 'Receptionist', 'LabTechnician', 'Pharmacist', 'BillingExecutive', 'Patient'
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='SET NULL'), nullable=True)
     profile_photo = db.Column(db.String(255), default='default_profile.png')
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -20,6 +21,10 @@ class User(db.Model, UserMixin):
     doctor = db.relationship('Doctor', backref='user', uselist=False, cascade="all, delete-orphan")
     receptionist = db.relationship('Receptionist', backref='user', uselist=False, cascade="all, delete-orphan")
     lab_technician = db.relationship('LabTechnician', backref='user', uselist=False, cascade="all, delete-orphan")
+    hospital_admin = db.relationship('HospitalAdmin', backref='user', uselist=False, cascade="all, delete-orphan")
+    nurse = db.relationship('Nurse', backref='user', uselist=False, cascade="all, delete-orphan")
+    pharmacist = db.relationship('Pharmacist', backref='user', uselist=False, cascade="all, delete-orphan")
+    billing_executive = db.relationship('BillingExecutive', backref='user', uselist=False, cascade="all, delete-orphan")
     notifications = db.relationship('Notification', backref='user', cascade="all, delete-orphan")
     audit_logs = db.relationship('AuditLog', backref='user', cascade="all, delete-orphan")
 
@@ -39,7 +44,15 @@ class User(db.Model, UserMixin):
             return f"{self.receptionist.first_name} {self.receptionist.last_name}"
         elif self.role == 'LabTechnician' and self.lab_technician:
             return f"{self.lab_technician.first_name} {self.lab_technician.last_name}"
-        return "Administrator"
+        elif self.role == 'HospitalAdmin' and self.hospital_admin:
+            return f"{self.hospital_admin.first_name} {self.hospital_admin.last_name}"
+        elif self.role == 'Nurse' and self.nurse:
+            return f"{self.nurse.first_name} {self.nurse.last_name}"
+        elif self.role == 'Pharmacist' and self.pharmacist:
+            return f"{self.pharmacist.first_name} {self.pharmacist.last_name}"
+        elif self.role == 'BillingExecutive' and self.billing_executive:
+            return f"{self.billing_executive.first_name} {self.billing_executive.last_name}"
+        return "Platform Administrator"
 
     def __repr__(self):
         return f"<User {self.email} ({self.role})>"
@@ -81,11 +94,31 @@ class Patient(db.Model):
         return f"<Patient {self.full_name}>"
 
 
+class HospitalAdmin(db.Model):
+    __tablename__ = 'hospital_admins'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def __repr__(self):
+        return f"<HospitalAdmin {self.full_name}>"
+
+
 class Doctor(db.Model):
     __tablename__ = 'doctors'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=False)
@@ -111,11 +144,31 @@ class Doctor(db.Model):
         return f"<Doctor {self.full_name}>"
 
 
+class Nurse(db.Model):
+    __tablename__ = 'nurses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def __repr__(self):
+        return f"<Nurse {self.full_name}>"
+
+
 class Receptionist(db.Model):
     __tablename__ = 'receptionists'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=False)
@@ -135,6 +188,7 @@ class LabTechnician(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=False)
@@ -151,3 +205,40 @@ class LabTechnician(db.Model):
     def __repr__(self):
         return f"<LabTechnician {self.full_name}>"
 
+
+class Pharmacist(db.Model):
+    __tablename__ = 'pharmacists'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def __repr__(self):
+        return f"<Pharmacist {self.full_name}>"
+
+
+class BillingExecutive(db.Model):
+    __tablename__ = 'billing_executives'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def __repr__(self):
+        return f"<BillingExecutive {self.full_name}>"

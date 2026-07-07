@@ -14,24 +14,25 @@ receptionist_bp = Blueprint('receptionist', __name__)
 @receptionist_bp.before_request
 @login_required
 def receptionist_required():
-    if current_user.role != 'Receptionist':
-        flash('Unauthorized access! You do not have permission to view this page.', 'danger')
+    if current_user.role not in ['Receptionist', 'BillingExecutive']:
+        flash('Unauthorized access! Front Desk or Billing credentials required.', 'danger')
         return redirect(url_for('auth.login'))
 
 @receptionist_bp.route('/dashboard')
 def dashboard():
     today = date.today()
+    h_id = current_user.hospital_id
     
-    # Dashboard items
-    today_appointments = Appointment.query.filter_by(appointment_date=today).order_by(Appointment.time_slot).all()
-    waiting_patients = Appointment.query.filter_by(appointment_date=today, status='Pending').all()
-    confirmed_appointments = Appointment.query.filter_by(appointment_date=today, status='Confirmed').all()
+    # Dashboard items (scoped by hospital)
+    today_appointments = Appointment.query.filter_by(hospital_id=h_id, appointment_date=today).order_by(Appointment.time_slot).all()
+    waiting_patients = Appointment.query.filter_by(hospital_id=h_id, appointment_date=today, status='Pending').all()
+    confirmed_appointments = Appointment.query.filter_by(hospital_id=h_id, appointment_date=today, status='Confirmed').all()
     
     stats = {
         'total_today': len(today_appointments),
         'waiting_count': len(waiting_patients),
         'confirmed_count': len(confirmed_appointments),
-        'completed_count': Appointment.query.filter_by(appointment_date=today, status='Completed').count()
+        'completed_count': Appointment.query.filter_by(hospital_id=h_id, appointment_date=today, status='Completed').count()
     }
     
     return render_template(
@@ -70,8 +71,8 @@ def register_patient():
         AuditService.log_action(current_user.id, f"Registered Patient (Front Desk): {patient.full_name}")
         NotificationService.create_notification(
             user.id,
-            "Welcome to MediCare",
-            "Your profile has been created. Your default login password is 'welcome123'. Please change it after your first login."
+            "Welcome to MediConnect India",
+            "Your profile has been created. Your default password is 'welcome123'. Please change it after logging in."
         )
         
         flash(f"Patient {patient.full_name} registered successfully! Default password is 'welcome123'.", 'success')
@@ -82,7 +83,10 @@ def register_patient():
 @receptionist_bp.route('/book-appointment', methods=['GET', 'POST'])
 def book_appointment():
     form = BookAppointmentForm()
-    # List of all patients to select from in front desk booking
+    h_id = current_user.hospital_id
+    
+    # Only show doctors inside receptionist's hospital
+    form.doctor_id.choices = [(d.id, d.full_name) for d in Doctor.query.filter_by(hospital_id=h_id).all()]
     patients_list = Patient.query.order_by(Patient.first_name).all()
     
     if request.method == 'POST':
@@ -100,6 +104,7 @@ def book_appointment():
             return render_template('receptionist/book_appointment.html', form=form, patients=patients_list)
             
         appt = Appointment(
+            hospital_id=h_id,
             patient_id=patient_id,
             doctor_id=doc_id,
             appointment_date=appt_date,
@@ -132,7 +137,7 @@ def book_appointment():
 
 @receptionist_bp.route('/appointments/confirm/<int:id>', methods=['POST'])
 def confirm_appointment(id):
-    appt = Appointment.query.get_or_404(id)
+    appt = Appointment.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
     appt.status = 'Confirmed'
     db.session.commit()
     
@@ -148,7 +153,7 @@ def confirm_appointment(id):
 
 @receptionist_bp.route('/appointments/cancel/<int:id>', methods=['POST'])
 def cancel_appointment(id):
-    appt = Appointment.query.get_or_404(id)
+    appt = Appointment.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
     appt.status = 'Cancelled'
     db.session.commit()
     
@@ -165,21 +170,21 @@ def cancel_appointment(id):
 @receptionist_bp.route('/billing', methods=['GET', 'POST'])
 def generate_bill():
     form = GenerateBillForm()
+    h_id = current_user.hospital_id
     
-    # Dynamically pre-populate consultation fee when patient/appointment selected
-    # This can be processed in form submission
     if form.validate_on_submit():
         appt_id = form.appointment_id.data
         patient_id = form.patient_id.data
         
         # Check if bill already exists for appointment
         if appt_id and appt_id != 0:
-            existing_bill = Bill.query.filter_by(appointment_id=appt_id).first()
+            existing_bill = Bill.query.filter_by(hospital_id=h_id, appointment_id=appt_id).first()
             if existing_bill:
                 flash(f"A bill already exists for Appointment #{appt_id}.", "warning")
                 return redirect(url_for('receptionist.view_bill', id=existing_bill.id))
                 
         bill = BillingService.generate_bill(
+            hospital_id=h_id,
             appointment_id=appt_id,
             patient_id=patient_id,
             consultation_fee=form.consultation_fee.data,
@@ -190,9 +195,8 @@ def generate_bill():
             status=form.status.data
         )
         
-        # If bill status is Paid, record payment
         if bill.status == 'Paid':
-            BillingService.record_payment(bill.id, bill.grand_total, "Cash", "CASH-FRONT-DESK")
+            BillingService.record_payment(h_id, bill.id, bill.grand_total, "Cash", f"CASH-{int(datetime.now().timestamp())}")
             
         AuditService.log_action(current_user.id, f"Generated Bill #{bill.id} for Patient: {bill.patient.full_name}")
         NotificationService.create_notification(
@@ -208,23 +212,23 @@ def generate_bill():
 
 @receptionist_bp.route('/bill/<int:id>')
 def view_bill(id):
-    bill = Bill.query.get_or_404(id)
+    bill = Bill.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
     return render_template('receptionist/view_bill.html', bill=bill)
 
 @receptionist_bp.route('/bill/<int:id>/pay', methods=['POST'])
 def pay_bill(id):
-    bill = Bill.query.get_or_404(id)
+    bill = Bill.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
     method = request.form.get('payment_method', 'Cash')
     txn_id = request.form.get('transaction_id', f"TXN-{datetime.now().strftime('%Y%m%d%H%M%S')}")
     
-    BillingService.record_payment(bill.id, bill.grand_total, method, txn_id)
+    BillingService.record_payment(current_user.hospital_id, bill.id, bill.grand_total, method, txn_id)
     AuditService.log_action(current_user.id, f"Recorded Payment for Bill #{bill.id}")
     flash(f"Payment of INR {bill.grand_total:.2f} recorded. Invoice status marked as Paid.", 'success')
     return redirect(url_for('receptionist.view_bill', id=bill.id))
 
 @receptionist_bp.route('/download-bill-pdf/<int:id>')
 def download_bill_pdf(id):
-    bill = Bill.query.get_or_404(id)
+    bill = Bill.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
     pdf_data = ReportService.generate_invoice_pdf(bill)
     return Response(
         pdf_data,

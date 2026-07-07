@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Manage Hospitals - MediConnect India{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Manage Registered Hospitals</h1>
+            <p class="text-muted small">Approve new organizations or suspend existing access</p>
+        </div>
+        
+        <!-- Filters -->
+        <div class="btn-group">
+            <a href="{{ url_for('super_admin.hospitals') }}" class="btn btn-outline-primary {% if not status_filter %}active{% endif %}">All</a>
+            <a href="{{ url_for('super_admin.hospitals', status='Pending') }}" class="btn btn-outline-primary {% if status_filter == 'Pending' %}active{% endif %}">Pending</a>
+            <a href="{{ url_for('super_admin.hospitals', status='Approved') }}" class="btn btn-outline-primary {% if status_filter == 'Approved' %}active{% endif %}">Approved</a>
+            <a href="{{ url_for('super_admin.hospitals', status='Suspended') }}" class="btn btn-outline-primary {% if status_filter == 'Suspended' %}active{% endif %}">Suspended</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Hospital Details</th>
+                            <th>Reg Number</th>
+                            <th>Geographical Info</th>
+                            <th>Contact Info</th>
+                            <th>Registered Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hosp in pagination.items %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-hospital fs-3 me-2 text-primary"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ hosp.name }}</div>
+                                            <span class="badge bg-secondary-subtle text-secondary small">{{ hosp.hospital_type }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><code>{{ hosp.registration_number }}</code></td>
+                                <td>
+                                    <div class="small">{{ hosp.address }}</div>
+                                    <div class="small text-muted">{{ hosp.city }}, {{ hosp.district }}, {{ hosp.state }} - {{ hosp.pincode }}</div>
+                                </td>
+                                <td>
+                                    <div class="small">{{ hosp.email }}</div>
+                                    <div class="small text-muted">{{ hosp.phone }}</div>
+                                    {% if hosp.website %}
+                                        <a href="{{ hosp.website }}" target="_blank" class="small text-decoration-none"><i class="bi bi-link-45deg"></i> Website</a>
+                                    {% endif %}
+                                </td>
+                                <td>{{ hosp.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if hosp.status == 'Approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% elif hosp.status == 'Pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% elif hosp.status == 'Suspended' %}
+                                        <span class="badge bg-danger">Suspended</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ hosp.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        {% if hosp.status != 'Approved' %}
+                                            <form action="{{ url_for('super_admin.change_hospital_status', id=hosp.id, new_status='Approved') }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                        {% if hosp.status == 'Approved' %}
+                                            <form action="{{ url_for('super_admin.change_hospital_status', id=hosp.id, new_status='Suspended') }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-warning text-dark">Suspend</button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if hosp.status != 'Rejected' and hosp.status != 'Approved' %}
+                                            <form action="{{ url_for('super_admin.change_hospital_status', id=hosp.id, new_status='Rejected') }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">No hospitals registered under this status.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+        <nav aria-label="Hospital pagination">
+            <ul class="pagination justify-content-center">
+                {% for page in pagination.iter_pages() %}
+                    {% if page %}
+                        <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('super_admin.hospitals', page=page, status=status_filter) }}">{{ page }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

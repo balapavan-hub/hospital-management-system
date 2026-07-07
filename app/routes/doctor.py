@@ -10,7 +10,7 @@ from app.models.appointment import Appointment
 from app.models.prescription import Prescription, PrescriptionMedicine
 from app.models.medical_report import MedicalReport
 from app.models.billing import Bill
-from app.models.lab_test import LabTest
+from app.models.lab_test import LabTest, LabTestTemplate, LabPackage
 from app.forms import PrescriptionForm, MedicalReportForm, DoctorOrderLabForm
 from app.services import AuditService, NotificationService, ReportService
 
@@ -104,6 +104,7 @@ def write_prescription(appointment_id):
     if form.validate_on_submit():
         # Create prescription
         prescription = Prescription(
+            hospital_id=doctor.hospital_id,
             appointment_id=appt.id,
             doctor_id=doctor.id,
             patient_id=appt.patient_id,
@@ -176,6 +177,7 @@ def upload_report(patient_id):
         file.save(filepath)
         
         report = MedicalReport(
+            hospital_id=current_user.doctor.hospital_id,
             patient_id=patient.id,
             doctor_id=current_user.doctor.id,
             report_name=form.report_name.data,
@@ -244,8 +246,8 @@ def order_lab_test(patient_id):
     form = DoctorOrderLabForm()
     
     # Load parameters and packages
-    templates = LabTestTemplate.query.order_by(LabTestTemplate.test_name).all()
-    packages = LabPackage.query.filter_by(is_active=True).order_by(LabPackage.name).all()
+    templates = LabTestTemplate.query.filter_by(hospital_id=doctor.hospital_id).order_by(LabTestTemplate.test_name).all()
+    packages = LabPackage.query.filter_by(hospital_id=doctor.hospital_id, is_active=True).order_by(LabPackage.name).all()
     
     form.single_template_id.choices = [(0, '--- Select Single Parameter ---')] + [(t.id, f"{t.test_name} (INR {t.cost})") for t in templates]
     form.package_id.choices = [(0, '--- Select Health Package ---')] + [(p.id, f"{p.name} (INR {p.cost})") for p in packages]
@@ -280,6 +282,7 @@ def order_lab_test(patient_id):
             cost = pkg.cost
             
         lab_test = LabTest(
+            hospital_id=doctor.hospital_id,
             sample_id=sample_id,
             patient_id=patient.id,
             doctor_id=doctor.id,

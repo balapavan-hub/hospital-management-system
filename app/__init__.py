@@ -40,6 +40,9 @@ def create_app(config_class=Config):
     from app.routes.patient import patient_bp
     from app.routes.receptionist import receptionist_bp
     from app.routes.lab_technician import lab_technician_bp
+    from app.routes.super_admin import super_admin_bp
+    from app.routes.nurse import nurse_bp
+    from app.routes.pharmacist import pharmacist_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -48,6 +51,9 @@ def create_app(config_class=Config):
     app.register_blueprint(patient_bp, url_prefix='/patient')
     app.register_blueprint(receptionist_bp, url_prefix='/receptionist')
     app.register_blueprint(lab_technician_bp, url_prefix='/lab-technician')
+    app.register_blueprint(super_admin_bp, url_prefix='/super-admin')
+    app.register_blueprint(nurse_bp, url_prefix='/nurse')
+    app.register_blueprint(pharmacist_bp, url_prefix='/pharmacist')
 
     # Context processors to inject global data
     @app.context_processor
@@ -64,13 +70,17 @@ def create_app(config_class=Config):
             unread_notifications = NotificationService.get_unread_notifications(current_user.id)
             unread_count = len(unread_notifications)
             
-        # Get hospital name dynamically from database settings
-        setting = None
-        try:
-            setting = SystemSetting.query.filter_by(setting_key='hospital_name').first()
-        except Exception:
-            pass
-        hospital_name = setting.setting_value if setting else "Hospital Management System"
+        # Get hospital name dynamically from database settings or logged in tenant
+        hospital_name = "MediConnect India"
+        if current_user and current_user.is_authenticated and current_user.hospital_id and current_user.hospital:
+            hospital_name = current_user.hospital.name
+        else:
+            try:
+                setting = SystemSetting.query.filter_by(setting_key='hospital_name').first()
+                if setting:
+                    hospital_name = setting.setting_value
+            except Exception:
+                pass
             
         return dict(
             unread_notifications=unread_notifications,

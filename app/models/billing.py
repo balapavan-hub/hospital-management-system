@@ -5,6 +5,7 @@ class Bill(db.Model):
     __tablename__ = 'bills'
     
     id = db.Column(db.Integer, primary_key=True)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
     appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id', ondelete='SET NULL'), unique=True, nullable=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id', ondelete='CASCADE'), nullable=False)
     consultation_fee = db.Column(db.Numeric(10, 2), nullable=False, default=0.00)
@@ -14,7 +15,7 @@ class Bill(db.Model):
     gst = db.Column(db.Numeric(10, 2), nullable=False, default=0.00) # Standard 18% GST or computed amount
     discount = db.Column(db.Numeric(10, 2), nullable=False, default=0.00)
     grand_total = db.Column(db.Numeric(10, 2), nullable=False, default=0.00)
-    status = db.Column(db.Enum('Paid', 'Pending', name='billing_status'), default='Pending')
+    status = db.Column(db.String(50), default='Pending') # 'Paid', 'Pending'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -28,9 +29,10 @@ class Payment(db.Model):
     __tablename__ = 'payments'
     
     id = db.Column(db.Integer, primary_key=True)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
     bill_id = db.Column(db.Integer, db.ForeignKey('bills.id', ondelete='CASCADE'), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
-    payment_method = db.Column(db.String(50), nullable=False) # Cash, Card, UPI, Insurance
+    payment_method = db.Column(db.String(50), nullable=False) # Cash, Card, UPI, Net Banking
     transaction_id = db.Column(db.String(100), unique=True, nullable=True)
     payment_date = db.Column(db.DateTime, default=datetime.utcnow)
 

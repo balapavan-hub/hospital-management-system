@@ -24,6 +24,7 @@ def dashboard():
         # Auto-create profile if user exists but profile does not
         tech = LabTechnician(
             user_id=current_user.id,
+            hospital_id=current_user.hospital_id,
             first_name="Lab",
             last_name="Technician",
             phone="9999999999",
@@ -32,11 +33,11 @@ def dashboard():
         db.session.add(tech)
         db.session.commit()
         
-    total_processed = LabTest.query.filter_by(lab_technician_id=tech.id).filter(LabTest.status.in_(['Completed', 'Delivered'])).count()
-    pending_samples = LabTest.query.filter(LabTest.status != 'Completed', LabTest.status != 'Delivered').count()
-    low_stock_items = LabInventory.query.filter(LabInventory.quantity <= LabInventory.min_stock_level).all()
+    total_processed = LabTest.query.filter_by(hospital_id=current_user.hospital_id, lab_technician_id=tech.id).filter(LabTest.status.in_(['Completed', 'Delivered'])).count()
+    pending_samples = LabTest.query.filter_by(hospital_id=current_user.hospital_id).filter(LabTest.status != 'Completed', LabTest.status != 'Delivered').count()
+    low_stock_items = LabInventory.query.filter_by(hospital_id=current_user.hospital_id).filter(LabInventory.quantity <= LabInventory.min_stock_level).all()
     
-    recent_orders = LabTest.query.order_by(LabTest.test_date.desc()).limit(10).all()
+    recent_orders = LabTest.query.filter_by(hospital_id=current_user.hospital_id).order_by(LabTest.test_date.desc()).limit(10).all()
 
     return render_template(
         'lab_technician/dashboard.html',
@@ -51,7 +52,7 @@ def dashboard():
 @lab_technician_bp.route('/orders')
 def orders():
     status_filter = request.args.get('status', '')
-    query = LabTest.query
+    query = LabTest.query.filter_by(hospital_id=current_user.hospital_id)
     if status_filter:
         query = query.filter_by(status=status_filter)
     
@@ -60,7 +61,7 @@ def orders():
 
 @lab_technician_bp.route('/process-sample/<int:test_id>', methods=['POST'])
 def process_sample(test_id):
-    lab_test = LabTest.query.get_or_404(test_id)
+    lab_test = LabTest.query.filter_by(id=test_id, hospital_id=current_user.hospital_id).first_or_404()
     tech = current_user.lab_technician
     
     current_status = lab_test.status
@@ -104,7 +105,7 @@ def process_sample(test_id):
 
 @lab_technician_bp.route('/record-results/<int:test_id>', methods=['GET', 'POST'])
 def record_results(test_id):
-    lab_test = LabTest.query.get_or_404(test_id)
+    lab_test = LabTest.query.filter_by(id=test_id, hospital_id=current_user.hospital_id).first_or_404()
     tech = current_user.lab_technician
     
     # Load all parameters
@@ -180,11 +181,12 @@ def record_results(test_id):
 
 @lab_technician_bp.route('/inventory', methods=['GET', 'POST'])
 def inventory():
-    items = LabInventory.query.order_by(LabInventory.item_name).all()
+    items = LabInventory.query.filter_by(hospital_id=current_user.hospital_id).order_by(LabInventory.item_name).all()
     form = InventoryItemForm()
     
     if form.validate_on_submit():
         item = LabInventory(
+            hospital_id=current_user.hospital_id,
             item_name=form.item_name.data.strip(),
             category=form.category.data,
             quantity=form.quantity.data,
@@ -201,7 +203,7 @@ def inventory():
 
 @lab_technician_bp.route('/inventory/edit/<int:id>', methods=['GET', 'POST'])
 def edit_inventory(id):
-    item = LabInventory.query.get_or_404(id)
+    item = LabInventory.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
     form = InventoryItemForm(obj=item)
     
     if form.validate_on_submit():
@@ -220,7 +222,7 @@ def edit_inventory(id):
 
 @lab_technician_bp.route('/inventory/delete/<int:id>', methods=['POST'])
 def delete_inventory(id):
-    item = LabInventory.query.get_or_404(id)
+    item = LabInventory.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
     db.session.delete(item)
     db.session.commit()
     AuditService.log_action(current_user.id, f"Deleted inventory item: {item.item_name}")

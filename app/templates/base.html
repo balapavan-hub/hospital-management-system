@@ -27,7 +27,23 @@
                 </a>
             </div>
             <ul class="sidebar-menu">
-                {% if current_user.role == 'Admin' %}
+                {% if current_user.role == 'SuperAdmin' %}
+                    <li class="sidebar-menu-item {% if request.endpoint == 'super_admin.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('super_admin.dashboard') }}" class="sidebar-menu-link">
+                            <i class="bi bi-grid-1x2-fill"></i><span>Super Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'hospitals' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('super_admin.hospitals') }}" class="sidebar-menu-link">
+                            <i class="bi bi-hospital"></i><span>Manage Hospitals</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'audit' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('super_admin.audit_logs') }}" class="sidebar-menu-link">
+                            <i class="bi bi-shield-lock-fill"></i><span>Platform Audit Logs</span>
+                        </a>
+                    </li>
+                {% elif current_user.role == 'HospitalAdmin' %}
                     <li class="sidebar-menu-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
                         <a href="{{ url_for('admin.dashboard') }}" class="sidebar-menu-link">
                             <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
@@ -35,7 +51,12 @@
                     </li>
                     <li class="sidebar-menu-item {% if 'doctors' in request.endpoint %}active{% endif %}">
                         <a href="{{ url_for('admin.doctors') }}" class="sidebar-menu-link">
-                            <i class="bi bi-person-pulse-fill"></i><span>Manage Doctors</span>
+                            <i class="bi bi-person-pulse-fill"></i><span>Doctors</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'nurses' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.nurses') }}" class="sidebar-menu-link">
+                            <i class="bi bi-heart-pulse-fill"></i><span>Nurses</span>
                         </a>
                     </li>
                     <li class="sidebar-menu-item {% if 'receptionists' in request.endpoint %}active{% endif %}">
@@ -48,14 +69,14 @@
                             <i class="bi bi-person-badge-fill"></i><span>Lab Technicians</span>
                         </a>
                     </li>
-                    <li class="sidebar-menu-item {% if 'patients' in request.endpoint %}active{% endif %}">
-                        <a href="{{ url_for('admin.patients') }}" class="sidebar-menu-link">
-                            <i class="bi bi-people-fill"></i><span>Manage Patients</span>
+                    <li class="sidebar-menu-item {% if 'pharmacists' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.pharmacists') }}" class="sidebar-menu-link">
+                            <i class="bi bi-capsule-pill"></i><span>Pharmacists</span>
                         </a>
                     </li>
-                    <li class="sidebar-menu-item {% if 'appointments' in request.endpoint %}active{% endif %}">
-                        <a href="{{ url_for('admin.appointments') }}" class="sidebar-menu-link">
-                            <i class="bi bi-calendar-event-fill"></i><span>Appointments</span>
+                    <li class="sidebar-menu-item {% if 'billing-executives' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.billing_executives') }}" class="sidebar-menu-link">
+                            <i class="bi bi-wallet-fill"></i><span>Billing Executives</span>
                         </a>
                     </li>
                     <li class="sidebar-menu-item {% if 'departments' in request.endpoint %}active{% endif %}">
@@ -65,7 +86,7 @@
                     </li>
                     <li class="sidebar-menu-item {% if 'rooms' in request.endpoint %}active{% endif %}">
                         <a href="{{ url_for('admin.rooms') }}" class="sidebar-menu-link">
-                            <i class="bi bi-door-closed-fill"></i><span>Manage Rooms</span>
+                            <i class="bi bi-door-closed-fill"></i><span>Rooms</span>
                         </a>
                     </li>
                     <li class="sidebar-menu-item {% if 'billing' in request.endpoint %}active{% endif %}">
@@ -98,11 +119,6 @@
                             <i class="bi bi-shield-lock-fill"></i><span>Audit Logs</span>
                         </a>
                     </li>
-                    <li class="sidebar-menu-item {% if 'settings' in request.endpoint %}active{% endif %}">
-                        <a href="{{ url_for('admin.settings') }}" class="sidebar-menu-link">
-                            <i class="bi bi-gear-fill"></i><span>System Settings</span>
-                        </a>
-                    </li>
                 {% elif current_user.role == 'Doctor' %}
                     <li class="sidebar-menu-item {% if request.endpoint == 'doctor.dashboard' %}active{% endif %}">
                         <a href="{{ url_for('doctor.dashboard') }}" class="sidebar-menu-link">
@@ -114,17 +130,18 @@
                             <i class="bi bi-people-fill"></i><span>My Patients</span>
                         </a>
                     </li>
-                    <li class="sidebar-menu-item {% if 'bills' in request.endpoint %}active{% endif %}">
-                        <a href="{{ url_for('doctor.view_bills') }}" class="sidebar-menu-link">
-                            <i class="bi bi-wallet2"></i><span>Consultation Fees</span>
-                        </a>
-                    </li>
                     <li class="sidebar-menu-item {% if 'lab_tests' in request.endpoint %}active{% endif %}">
                         <a href="{{ url_for('doctor.lab_tests') }}" class="sidebar-menu-link">
                             <i class="bi bi-clipboard2-pulse-fill"></i><span>Lab Tests</span>
                         </a>
                     </li>
-                {% elif current_user.role == 'Receptionist' %}
+                {% elif current_user.role == 'Nurse' %}
+                    <li class="sidebar-menu-item {% if request.endpoint == 'nurse.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('nurse.dashboard') }}" class="sidebar-menu-link">
+                            <i class="bi bi-heart-pulse"></i><span>Nurse Dashboard</span>
+                        </a>
+                    </li>
+                {% elif current_user.role in ['Receptionist', 'BillingExecutive'] %}
                     <li class="sidebar-menu-item {% if request.endpoint == 'receptionist.dashboard' %}active{% endif %}">
                         <a href="{{ url_for('receptionist.dashboard') }}" class="sidebar-menu-link">
                             <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
@@ -150,10 +167,47 @@
                             <i class="bi bi-search"></i><span>Search Patients</span>
                         </a>
                     </li>
+                {% elif current_user.role == 'LabTechnician' %}
+                    <li class="sidebar-menu-item {% if request.endpoint == 'lab_technician.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('lab_technician.dashboard') }}" class="sidebar-menu-link">
+                            <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'orders' in request.endpoint or 'results' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('lab_technician.orders') }}" class="sidebar-menu-link">
+                            <i class="bi bi-clipboard2-pulse-fill"></i><span>Lab Orders</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'inventory' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('lab_technician.inventory') }}" class="sidebar-menu-link">
+                            <i class="bi bi-box-fill"></i><span>Lab Inventory</span>
+                        </a>
+                    </li>
+                {% elif current_user.role == 'Pharmacist' %}
+                    <li class="sidebar-menu-item {% if request.endpoint == 'pharmacist.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('pharmacist.dashboard') }}" class="sidebar-menu-link">
+                            <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'inventory' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('pharmacist.inventory') }}" class="sidebar-menu-link">
+                            <i class="bi bi-capsule"></i><span>Inventory</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'suppliers' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('pharmacist.suppliers') }}" class="sidebar-menu-link">
+                            <i class="bi bi-truck"></i><span>Suppliers</span>
+                        </a>
+                    </li>
                 {% elif current_user.role == 'Patient' %}
                     <li class="sidebar-menu-item {% if request.endpoint == 'patient.dashboard' %}active{% endif %}">
                         <a href="{{ url_for('patient.dashboard') }}" class="sidebar-menu-link">
                             <i class="bi bi-grid-1x2-fill"></i><span>My Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'search-hospitals' in request.url %}active{% endif %}">
+                        <a href="{{ url_for('patient.search_hospitals') }}" class="sidebar-menu-link">
+                            <i class="bi bi-search-heart"></i><span>Search Hospitals</span>
                         </a>
                     </li>
                     <li class="sidebar-menu-item {% if 'book-appointment' in request.url %}active{% endif %}">

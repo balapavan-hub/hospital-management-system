@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Record Vitals - MediConnect India{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white">
+                <div class="card-header bg-white border-0 py-3 d-flex align-items-center">
+                    <a href="{{ url_for('nurse.dashboard') }}" class="btn btn-link p-0 me-3 text-decoration-none text-dark fs-4"><i class="bi bi-arrow-left"></i></a>
+                    <h5 class="mb-0 fw-bold">Record Vitals - Patient: {{ appointment.patient.full_name }}</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('nurse.record_vitals', appointment_id=appointment.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Blood Pressure (mmHg) *</label>
+                            <input type="text" name="blood_pressure" class="form-control" placeholder="e.g. 120/80" value="{{ appointment.vitals_blood_pressure or '' }}" required>
+                        </div>
+                        
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted">Pulse Rate (bpm) *</label>
+                                <input type="number" name="pulse" class="form-control" placeholder="e.g. 72" value="{{ appointment.vitals_pulse or '' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted">Temperature (°F) *</label>
+                                <input type="number" step="0.1" name="temperature" class="form-control" placeholder="e.g. 98.6" value="{{ appointment.vitals_temperature or '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted">Height (cm) *</label>
+                                <input type="number" step="0.1" name="height" id="height_input" class="form-control" placeholder="e.g. 175" value="{{ appointment.vitals_height or '' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-uppercase text-muted">Weight (kg) *</label>
+                                <input type="number" step="0.1" name="weight" id="weight_input" class="form-control" placeholder="e.g. 70" value="{{ appointment.vitals_weight or '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold small text-uppercase text-muted d-block">Computed BMI</span>
+                                <span id="bmi_badge" class="badge bg-secondary">Pending Calculation</span>
+                            </div>
+                            <h3 id="bmi_value" class="mb-0 fw-bold text-primary">--</h3>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Nurse Observations & Clinical Notes</label>
+                            <textarea name="observations" class="form-control" rows="4" placeholder="Enter patient general physical condition or notes...">{{ appointment.nurse_observations or '' }}</textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-bold">
+                            <i class="bi bi-check2-circle me-1"></i>Save Patient Vitals
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const heightInput = document.getElementById("height_input");
+        const weightInput = document.getElementById("weight_input");
+        const bmiValue = document.getElementById("bmi_value");
+        const bmiBadge = document.getElementById("bmi_badge");
+
+        function calculateBMI() {
+            const h = parseFloat(heightInput.value);
+            const w = parseFloat(weightInput.value);
+            if (h > 0 && w > 0) {
+                const heightM = h / 100.0;
+                const bmi = (w / (heightM * heightM)).toFixed(2);
+                bmiValue.innerText = bmi;
+
+                if (bmi < 18.5) {
+                    bmiBadge.innerText = "Underweight";
+                    bmiBadge.className = "badge bg-warning text-dark";
+                } else if (bmi >= 18.5 && bmi < 24.9) {
+                    bmiBadge.innerText = "Normal";
+                    bmiBadge.className = "badge bg-success";
+                } else if (bmi >= 25 && bmi < 29.9) {
+                    bmiBadge.innerText = "Overweight";
+                    bmiBadge.className = "badge bg-warning text-dark";
+                } else {
+                    bmiBadge.innerText = "Obese";
+                    bmiBadge.className = "badge bg-danger";
+                }
+            } else {
+                bmiValue.innerText = "--";
+                bmiBadge.innerText = "Pending Calculation";
+                bmiBadge.className = "badge bg-secondary";
+            }
+        }
+
+        heightInput.addEventListener("input", calculateBMI);
+        weightInput.addEventListener("input", calculateBMI);
+
+        // Run once on load if values exist
+        calculateBMI();
+    });
+</script>
+{% endblock %}

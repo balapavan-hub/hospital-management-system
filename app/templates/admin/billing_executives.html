@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Billing Executives - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0 text-gray-800">Manage Billing Executives</h1>
+        <p class="text-muted small">Register, update, and manage billing executives for invoice collections</p>
+    </div>
+    <a href="{{ url_for('admin.add_billing_executive') }}" class="btn btn-primary rounded-pill px-4">
+        <i class="bi bi-person-plus-fill me-2"></i>Add Billing Executive
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 bg-white">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in billing_executives %}
+                        <tr>
+                            <td>{{ b.first_name }}</td>
+                            <td>{{ b.last_name }}</td>
+                            <td>{{ b.user.email }}</td>
+                            <td>{{ b.phone }}</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('admin.edit_billing_executive', id=b.id) }}" class="btn btn-sm btn-outline-primary rounded-circle"><i class="bi bi-pencil"></i></a>
+                                    <form action="{{ url_for('admin.delete_billing_executive', id=b.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this billing executive?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No billing executives registered for this hospital yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

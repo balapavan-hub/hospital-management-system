@@ -5,6 +5,7 @@ class Prescription(db.Model):
     __tablename__ = 'prescriptions'
     
     id = db.Column(db.Integer, primary_key=True)
+    hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id', ondelete='CASCADE'), nullable=False)
     appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id', ondelete='SET NULL'), unique=True, nullable=True)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id', ondelete='CASCADE'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id', ondelete='CASCADE'), nullable=False)

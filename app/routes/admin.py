@@ -1,110 +1,99 @@
 from datetime import datetime, date
 from decimal import Decimal
-from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file, Response, g
+from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file, Response
 from flask_login import login_required, current_user
 from sqlalchemy import func
 
 from app.models import db
-from app.models.user import User, Doctor, Patient, Receptionist, LabTechnician
+from app.models.user import User, Doctor, Patient, Receptionist, LabTechnician, Nurse, Pharmacist, BillingExecutive
 from app.models.department import Department
 from app.models.appointment import Appointment
 from app.models.billing import Bill, Payment
 from app.models.room import Room
 from app.models.audit_log import AuditLog
 from app.models.lab_test import LabTest, LabPackage, LabTestTemplate, LabInventory
-from app.forms import DoctorForm, ReceptionistForm, DepartmentForm, RoomForm, LabPackageForm, LabTestTemplateForm, LabTechnicianForm
+from app.forms import (
+    DoctorForm, ReceptionistForm, DepartmentForm, RoomForm, 
+    LabPackageForm, LabTestTemplateForm, LabTechnicianForm,
+    NurseForm, PharmacistForm, BillingExecutiveForm
+)
 from app.services import AuditService, ReportService
 
 admin_bp = Blueprint('admin', __name__)
 
-# Middleware to ensure only Admins can access this blueprint
+# Middleware to ensure only Hospital Admins can access this blueprint
 @admin_bp.before_request
 @login_required
 def admin_required():
-    if current_user.role != 'Admin':
-        flash('Unauthorized access! You do not have permission to view this page.', 'danger')
+    if current_user.role != 'HospitalAdmin':
+        flash('Unauthorized access! Hospital Admin credentials required.', 'danger')
         return redirect(url_for('auth.login'))
 
 @admin_bp.route('/dashboard')
 def dashboard():
-    # 1. Card Statistics
-    total_patients = Patient.query.count()
-    total_doctors = Doctor.query.count()
-    total_receptionists = Receptionist.query.count()
-    total_technicians = LabTechnician.query.count()
+    h_id = current_user.hospital_id
+    
+    # Staff Counts
+    total_doctors = Doctor.query.filter_by(hospital_id=h_id).count()
+    total_receptionists = Receptionist.query.filter_by(hospital_id=h_id).count()
+    total_technicians = LabTechnician.query.filter_by(hospital_id=h_id).count()
+    total_nurses = Nurse.query.filter_by(hospital_id=h_id).count()
+    total_pharmacists = Pharmacist.query.filter_by(hospital_id=h_id).count()
+    total_executives = BillingExecutive.query.filter_by(hospital_id=h_id).count()
+    
+    # Patients who have visited this hospital
+    total_patients = Patient.query.join(Appointment).filter(Appointment.hospital_id == h_id).distinct().count()
     
     today_str = date.today()
-    today_appointments = Appointment.query.filter_by(appointment_date=today_str).count()
+    today_appointments = Appointment.query.filter_by(hospital_id=h_id, appointment_date=today_str).count()
+    available_docs_count = Doctor.query.filter_by(hospital_id=h_id, availability_status='Available').count()
     
-    # Available Doctors
-    available_docs_count = Doctor.query.filter_by(availability_status='Available').count()
+    # Revenue calculations
+    total_revenue = float(db.session.query(func.sum(Bill.grand_total)).filter_by(hospital_id=h_id, status='Paid').scalar() or 0.0)
     
-    # Monthly Revenue calculation
-    current_month = datetime.now().month
-    current_year = datetime.now().year
-    monthly_revenue_q = db.session.query(func.sum(Bill.grand_total)).filter(
-        func.extract('month', Bill.created_at) == current_month,
-        func.extract('year', Bill.created_at) == current_year,
-        Bill.status == 'Paid'
-    ).scalar()
-    monthly_revenue = monthly_revenue_q or 0.00
-
-    # 2. Charts Data Queries
-    # - Appointments per month (last 6 months)
-    # - Revenue per month (last 6 months)
-    # - Patient growth (registered per month)
-    # - Doctor performance (completed appointments per doctor)
+    recent_appointments = Appointment.query.filter_by(hospital_id=h_id).order_by(Appointment.created_at.desc()).limit(5).all()
+    recent_logs = AuditLog.query.filter_by(hospital_id=h_id).order_by(AuditLog.created_at.desc()).limit(5).all()
     
-    # Recent activity / appointments
-    recent_appointments = Appointment.query.order_by(Appointment.created_at.desc()).limit(5).all()
-    recent_logs = AuditLog.query.order_by(AuditLog.created_at.desc()).limit(5).all()
-
     return render_template(
         'admin/dashboard.html',
-        total_patients=total_patients,
         total_doctors=total_doctors,
         total_receptionists=total_receptionists,
         total_technicians=total_technicians,
+        total_nurses=total_nurses,
+        total_pharmacists=total_pharmacists,
+        total_executives=total_executives,
+        total_patients=total_patients,
         today_appointments=today_appointments,
         available_docs_count=available_docs_count,
-        monthly_revenue=monthly_revenue,
+        total_revenue=total_revenue,
         recent_appointments=recent_appointments,
         recent_logs=recent_logs
     )
 
-# --- DOCTOR CRUD ---
+# ----------------------------------------------------
+# STAFF MANAGEMENT
+# ----------------------------------------------------
+
 @admin_bp.route('/doctors')
 def doctors():
-    search = request.args.get('search', '')
-    page = request.args.get('page', 1, type=int)
-    
-    query = Doctor.query
-    if search:
-        query = query.filter(
-            (Doctor.first_name.like(f"%{search}%")) | 
-            (Doctor.last_name.like(f"%{search}%")) |
-            (Doctor.specialization.like(f"%{search}%"))
-        )
-        
-    pagination = query.paginate(page=page, per_page=10)
-    return render_template('admin/doctors.html', pagination=pagination, search=search)
+    docs = Doctor.query.filter_by(hospital_id=current_user.hospital_id).all()
+    return render_template('admin/doctors.html', doctors=docs)
 
 @admin_bp.route('/doctors/add', methods=['GET', 'POST'])
 def add_doctor():
     form = DoctorForm()
+    # Populate departments dropdown from hospital departments
+    form.department_id.choices = [(d.id, d.name) for d in Department.query.filter_by(hospital_id=current_user.hospital_id).all()]
+    
     if form.validate_on_submit():
-        # First check if password is provided
-        if not form.password.data:
-            form.password.errors.append("Password is required for a new doctor account.")
-            return render_template('admin/doctor_form.html', form=form, title="Add Doctor")
-            
-        user = User(email=form.email.data, role='Doctor')
+        user = User(email=form.email.data, role='Doctor', hospital_id=current_user.hospital_id)
         user.set_password(form.password.data)
         db.session.add(user)
-        db.session.flush() # Populate user.id
+        db.session.flush()
         
         doctor = Doctor(
             user_id=user.id,
+            hospital_id=current_user.hospital_id,
             first_name=form.first_name.data,
             last_name=form.last_name.data,
             phone=form.phone.data,
@@ -118,19 +107,25 @@ def add_doctor():
         db.session.add(doctor)
         db.session.commit()
         
-        AuditService.log_action(current_user.id, f"Added Doctor: {doctor.full_name}")
-        flash(f"Doctor {doctor.full_name} added successfully!", "success")
+        AuditService.log_action(current_user.id, f"Added Doctor '{doctor.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Doctor added successfully!', 'success')
         return redirect(url_for('admin.doctors'))
         
     return render_template('admin/doctor_form.html', form=form, title="Add Doctor")
 
 @admin_bp.route('/doctors/edit/<int:id>', methods=['GET', 'POST'])
 def edit_doctor(id):
-    doctor = Doctor.query.get_or_404(id)
-    form = DoctorForm(doctor_id=id)
+    doctor = Doctor.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(doctor.user_id)
+    
+    form = DoctorForm(doctor_id=doctor.id)
+    form.department_id.choices = [(d.id, d.name) for d in Department.query.filter_by(hospital_id=current_user.hospital_id).all()]
     
     if form.validate_on_submit():
-        doctor.user.email = form.email.data
+        user.email = form.email.data
+        if form.password.data:
+            user.set_password(form.password.data)
+            
         doctor.first_name = form.first_name.data
         doctor.last_name = form.last_name.data
         doctor.phone = form.phone.data
@@ -141,18 +136,16 @@ def edit_doctor(id):
         doctor.bio = form.bio.data
         doctor.availability_status = form.availability_status.data
         
-        if form.password.data:
-            doctor.user.set_password(form.password.data)
-            
         db.session.commit()
-        AuditService.log_action(current_user.id, f"Edited Doctor: {doctor.full_name}")
-        flash(f"Doctor {doctor.full_name} details updated successfully!", "success")
+        AuditService.log_action(current_user.id, f"Updated Doctor '{doctor.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Doctor updated successfully!', 'success')
         return redirect(url_for('admin.doctors'))
         
-    elif request.method == 'GET':
-        form.email.data = doctor.user.email
+    # Populate form values for GET
+    if request.method == 'GET':
         form.first_name.data = doctor.first_name
         form.last_name.data = doctor.last_name
+        form.email.data = user.email
         form.phone.data = doctor.phone
         form.department_id.data = doctor.department_id
         form.specialization.data = doctor.specialization
@@ -165,222 +158,372 @@ def edit_doctor(id):
 
 @admin_bp.route('/doctors/delete/<int:id>', methods=['POST'])
 def delete_doctor(id):
-    doctor = Doctor.query.get_or_404(id)
-    user = doctor.user
-    full_name = doctor.full_name
-    db.session.delete(user) # Cascades to doctor
+    doctor = Doctor.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(doctor.user_id)
+    
+    AuditService.log_action(current_user.id, f"Deleted Doctor '{doctor.full_name}'", request.remote_addr, current_user.hospital_id)
+    db.session.delete(user)
     db.session.commit()
-    AuditService.log_action(current_user.id, f"Deleted Doctor Account: {full_name}")
-    flash(f"Doctor {full_name} deleted successfully.", "success")
+    
+    flash('Doctor deleted successfully.', 'success')
     return redirect(url_for('admin.doctors'))
 
-# --- RECEPTIONIST CRUD ---
+# -- RECEPTIONISTS --
 @admin_bp.route('/receptionists')
 def receptionists():
-    search = request.args.get('search', '')
-    page = request.args.get('page', 1, type=int)
-    
-    query = Receptionist.query
-    if search:
-        query = query.filter(
-            (Receptionist.first_name.like(f"%{search}%")) |
-            (Receptionist.last_name.like(f"%{search}%"))
-        )
-    pagination = query.paginate(page=page, per_page=10)
-    return render_template('admin/receptionists.html', pagination=pagination, search=search)
+    recs = Receptionist.query.filter_by(hospital_id=current_user.hospital_id).all()
+    return render_template('admin/receptionists.html', receptionists=recs)
 
 @admin_bp.route('/receptionists/add', methods=['GET', 'POST'])
 def add_receptionist():
     form = ReceptionistForm()
     if form.validate_on_submit():
-        if not form.password.data:
-            form.password.errors.append("Password is required for a new receptionist account.")
-            return render_template('admin/receptionist_form.html', form=form, title="Add Receptionist")
-            
-        user = User(email=form.email.data, role='Receptionist')
+        user = User(email=form.email.data, role='Receptionist', hospital_id=current_user.hospital_id)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.flush()
         
-        receptionist = Receptionist(
+        rec = Receptionist(
             user_id=user.id,
+            hospital_id=current_user.hospital_id,
             first_name=form.first_name.data,
             last_name=form.last_name.data,
             phone=form.phone.data,
             shift=form.shift.data
         )
-        db.session.add(receptionist)
+        db.session.add(rec)
         db.session.commit()
         
-        AuditService.log_action(current_user.id, f"Added Receptionist: {receptionist.full_name}")
-        flash(f"Receptionist {receptionist.full_name} added successfully!", "success")
+        AuditService.log_action(current_user.id, f"Added Receptionist '{rec.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Receptionist added successfully!', 'success')
         return redirect(url_for('admin.receptionists'))
         
     return render_template('admin/receptionist_form.html', form=form, title="Add Receptionist")
 
 @admin_bp.route('/receptionists/edit/<int:id>', methods=['GET', 'POST'])
 def edit_receptionist(id):
-    receptionist = Receptionist.query.get_or_404(id)
-    form = ReceptionistForm(receptionist_id=id)
+    rec = Receptionist.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(rec.user_id)
     
-    if form.validate_on_submit():
-        receptionist.user.email = form.email.data
-        receptionist.first_name = form.first_name.data
-        receptionist.last_name = form.last_name.data
-        receptionist.phone = form.phone.data
-        receptionist.shift = form.shift.data
-        
-        if form.password.data:
-            receptionist.user.set_password(form.password.data)
-            
-        db.session.commit()
-        AuditService.log_action(current_user.id, f"Edited Receptionist: {receptionist.full_name}")
-        flash(f"Receptionist {receptionist.full_name} details updated successfully!", "success")
-        return redirect(url_for('admin.receptionists'))
-        
-    elif request.method == 'GET':
-        form.email.data = receptionist.user.email
-        form.first_name.data = receptionist.first_name
-        form.last_name.data = receptionist.last_name
-        form.phone.data = receptionist.phone
-        form.shift.data = receptionist.shift
-        
-    return render_template('admin/receptionist_form.html', form=form, title="Edit Receptionist")
-
-@admin_bp.route('/receptionists/delete/<int:id>', methods=['POST'])
-def delete_receptionist(id):
-    receptionist = Receptionist.query.get_or_404(id)
-    user = receptionist.user
-    full_name = receptionist.full_name
-    db.session.delete(user) # Cascades
-    db.session.commit()
-    AuditService.log_action(current_user.id, f"Deleted Receptionist Account: {full_name}")
-    flash(f"Receptionist {full_name} deleted successfully.", "success")
-    return redirect(url_for('admin.receptionists'))
-
-
-# --- LAB TECHNICIANS MANAGEMENT ---
-@admin_bp.route('/lab-technicians')
-@login_required
-def lab_technicians():
-    search = request.args.get('search', '')
-    page = request.args.get('page', 1, type=int)
-    
-    query = LabTechnician.query
-    if search:
-        query = query.filter(
-            (LabTechnician.first_name.like(f"%{search}%")) |
-            (LabTechnician.last_name.like(f"%{search}%")) |
-            (LabTechnician.employee_id.like(f"%{search}%"))
-        )
-    pagination = query.paginate(page=page, per_page=10)
-    return render_template('admin/lab_technicians.html', pagination=pagination, search=search)
-
-@admin_bp.route('/lab-technicians/add', methods=['GET', 'POST'])
-@login_required
-def add_lab_technician():
-    form = LabTechnicianForm()
-    if form.validate_on_submit():
-        if not form.password.data:
-            form.password.errors.append("Password is required for a new lab technician account.")
-            return render_template('admin/lab_technician_form.html', form=form, title="Add Lab Technician")
-            
-        user = User(email=form.email.data, role='LabTechnician')
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.flush()
-        
-        technician = LabTechnician(
-            user_id=user.id,
-            first_name=form.first_name.data,
-            last_name=form.last_name.data,
-            phone=form.phone.data,
-            employee_id=form.employee_id.data
-        )
-        db.session.add(technician)
-        db.session.commit()
-        
-        AuditService.log_action(current_user.id, f"Added Lab Technician: {technician.full_name}", request.remote_addr)
-        flash(f"Lab Technician {technician.full_name} added successfully!", "success")
-        return redirect(url_for('admin.lab_technicians'))
-        
-    return render_template('admin/lab_technician_form.html', form=form, title="Add Lab Technician")
-
-@admin_bp.route('/lab-technicians/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_lab_technician(id):
-    technician = LabTechnician.query.get_or_404(id)
-    user = User.query.get(technician.user_id)
-    form = LabTechnicianForm(obj=technician, technician_id=id)
-    
-    if request.method == 'GET':
-        form.email.data = user.email
-        
+    form = ReceptionistForm(receptionist_id=rec.id)
     if form.validate_on_submit():
         user.email = form.email.data
         if form.password.data:
             user.set_password(form.password.data)
             
-        technician.first_name = form.first_name.data
-        technician.last_name = form.last_name.data
-        technician.phone = form.phone.data
-        technician.employee_id = form.employee_id.data
+        rec.first_name = form.first_name.data
+        rec.last_name = form.last_name.data
+        rec.phone = form.phone.data
+        rec.shift = form.shift.data
         
         db.session.commit()
-        AuditService.log_action(current_user.id, f"Edited Lab Technician ID: {technician.id}", request.remote_addr)
-        flash(f"Lab Technician {technician.full_name} updated successfully!", "success")
+        AuditService.log_action(current_user.id, f"Updated Receptionist '{rec.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Receptionist updated successfully!', 'success')
+        return redirect(url_for('admin.receptionists'))
+        
+    if request.method == 'GET':
+        form.first_name.data = rec.first_name
+        form.last_name.data = rec.last_name
+        form.email.data = user.email
+        form.phone.data = rec.phone
+        form.shift.data = rec.shift
+        
+    return render_template('admin/receptionist_form.html', form=form, title="Edit Receptionist")
+
+@admin_bp.route('/receptionists/delete/<int:id>', methods=['POST'])
+def delete_receptionist(id):
+    rec = Receptionist.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(rec.user_id)
+    
+    AuditService.log_action(current_user.id, f"Deleted Receptionist '{rec.full_name}'", request.remote_addr, current_user.hospital_id)
+    db.session.delete(user)
+    db.session.commit()
+    
+    flash('Receptionist deleted successfully.', 'success')
+    return redirect(url_for('admin.receptionists'))
+
+# -- LAB TECHNICIANS --
+@admin_bp.route('/lab-technicians')
+def lab_technicians():
+    techs = LabTechnician.query.filter_by(hospital_id=current_user.hospital_id).all()
+    return render_template('admin/lab_technicians.html', lab_technicians=techs)
+
+@admin_bp.route('/lab-technicians/add', methods=['GET', 'POST'])
+def add_lab_technician():
+    form = LabTechnicianForm()
+    if form.validate_on_submit():
+        user = User(email=form.email.data, role='LabTechnician', hospital_id=current_user.hospital_id)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.flush()
+        
+        tech = LabTechnician(
+            user_id=user.id,
+            hospital_id=current_user.hospital_id,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            phone=form.phone.data,
+            employee_id=form.employee_id.data
+        )
+        db.session.add(tech)
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Added Lab Technician '{tech.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Lab Technician added successfully!', 'success')
         return redirect(url_for('admin.lab_technicians'))
         
-    return render_template('admin/lab_technician_form.html', form=form, title="Edit Lab Technician", edit_mode=True)
+    return render_template('admin/lab_technician_form.html', form=form, title="Add Lab Technician")
+
+@admin_bp.route('/lab-technicians/edit/<int:id>', methods=['GET', 'POST'])
+def edit_lab_technician(id):
+    tech = LabTechnician.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(tech.user_id)
+    
+    form = LabTechnicianForm(technician_id=tech.id)
+    if form.validate_on_submit():
+        user.email = form.email.data
+        if form.password.data:
+            user.set_password(form.password.data)
+            
+        tech.first_name = form.first_name.data
+        tech.last_name = form.last_name.data
+        tech.phone = form.phone.data
+        tech.employee_id = form.employee_id.data
+        
+        db.session.commit()
+        AuditService.log_action(current_user.id, f"Updated Lab Technician '{tech.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Lab Technician updated successfully!', 'success')
+        return redirect(url_for('admin.lab_technicians'))
+        
+    if request.method == 'GET':
+        form.first_name.data = tech.first_name
+        form.last_name.data = tech.last_name
+        form.email.data = user.email
+        form.phone.data = tech.phone
+        form.employee_id.data = tech.employee_id
+        
+    return render_template('admin/lab_technician_form.html', form=form, title="Edit Lab Technician")
 
 @admin_bp.route('/lab-technicians/delete/<int:id>', methods=['POST'])
-@login_required
 def delete_lab_technician(id):
-    technician = LabTechnician.query.get_or_404(id)
-    user = User.query.get(technician.user_id)
-    full_name = technician.full_name
+    tech = LabTechnician.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(tech.user_id)
     
-    db.session.delete(technician)
-    if user:
-        db.session.delete(user)
+    AuditService.log_action(current_user.id, f"Deleted Lab Technician '{tech.full_name}'", request.remote_addr, current_user.hospital_id)
+    db.session.delete(user)
     db.session.commit()
     
-    AuditService.log_action(current_user.id, f"Deleted Lab Technician ID: {id}", request.remote_addr)
-    flash(f"Lab Technician {full_name} deleted successfully!", "success")
+    flash('Lab Technician deleted successfully.', 'success')
     return redirect(url_for('admin.lab_technicians'))
 
+# -- NURSES --
+@admin_bp.route('/nurses')
+def nurses():
+    nurses_list = Nurse.query.filter_by(hospital_id=current_user.hospital_id).all()
+    return render_template('admin/nurses.html', nurses=nurses_list)
 
-# --- PATIENT MANAGEMENT ---
-@admin_bp.route('/patients')
-def patients():
-    search = request.args.get('search', '')
-    page = request.args.get('page', 1, type=int)
-    
-    query = Patient.query
-    if search:
-        query = query.filter(
-            (Patient.first_name.like(f"%{search}%")) |
-            (Patient.last_name.like(f"%{search}%")) |
-            (Patient.phone.like(f"%{search}%"))
+@admin_bp.route('/nurses/add', methods=['GET', 'POST'])
+def add_nurse():
+    form = NurseForm()
+    if form.validate_on_submit():
+        user = User(email=form.email.data, role='Nurse', hospital_id=current_user.hospital_id)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.flush()
+        
+        nurse = Nurse(
+            user_id=user.id,
+            hospital_id=current_user.hospital_id,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            phone=form.phone.data
         )
-    pagination = query.paginate(page=page, per_page=10)
-    return render_template('admin/patients.html', pagination=pagination, search=search)
+        db.session.add(nurse)
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Added Nurse '{nurse.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Nurse registered successfully!', 'success')
+        return redirect(url_for('admin.nurses'))
+        
+    return render_template('admin/nurse_form.html', form=form, title="Add Nurse")
 
-@admin_bp.route('/patients/delete/<int:id>', methods=['POST'])
-def delete_patient(id):
-    patient = Patient.query.get_or_404(id)
-    user = patient.user
-    full_name = patient.full_name
-    db.session.delete(user) # Cascades
+@admin_bp.route('/nurses/edit/<int:id>', methods=['GET', 'POST'])
+def edit_nurse(id):
+    nurse = Nurse.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(nurse.user_id)
+    
+    form = NurseForm(nurse_id=nurse.id)
+    if form.validate_on_submit():
+        user.email = form.email.data
+        if form.password.data:
+            user.set_password(form.password.data)
+        nurse.first_name = form.first_name.data
+        nurse.last_name = form.last_name.data
+        nurse.phone = form.phone.data
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Updated Nurse '{nurse.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Nurse details updated successfully!', 'success')
+        return redirect(url_for('admin.nurses'))
+        
+    if request.method == 'GET':
+        form.first_name.data = nurse.first_name
+        form.last_name.data = nurse.last_name
+        form.email.data = user.email
+        form.phone.data = nurse.phone
+        
+    return render_template('admin/nurse_form.html', form=form, title="Edit Nurse")
+
+@admin_bp.route('/nurses/delete/<int:id>', methods=['POST'])
+def delete_nurse(id):
+    nurse = Nurse.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(nurse.user_id)
+    db.session.delete(user)
     db.session.commit()
-    AuditService.log_action(current_user.id, f"Deleted Patient Account: {full_name}")
-    flash(f"Patient {full_name} account deleted successfully.", "success")
-    return redirect(url_for('admin.patients'))
+    flash('Nurse profile deleted successfully.', 'success')
+    return redirect(url_for('admin.nurses'))
 
-# --- DEPARTMENTS ---
+# -- PHARMACISTS --
+@admin_bp.route('/pharmacists')
+def pharmacists():
+    pharms = Pharmacist.query.filter_by(hospital_id=current_user.hospital_id).all()
+    return render_template('admin/pharmacists.html', pharmacists=pharms)
+
+@admin_bp.route('/pharmacists/add', methods=['GET', 'POST'])
+def add_pharmacist():
+    form = PharmacistForm()
+    if form.validate_on_submit():
+        user = User(email=form.email.data, role='Pharmacist', hospital_id=current_user.hospital_id)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.flush()
+        
+        pharm = Pharmacist(
+            user_id=user.id,
+            hospital_id=current_user.hospital_id,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            phone=form.phone.data
+        )
+        db.session.add(pharm)
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Added Pharmacist '{pharm.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Pharmacist registered successfully!', 'success')
+        return redirect(url_for('admin.pharmacists'))
+        
+    return render_template('admin/pharmacist_form.html', form=form, title="Add Pharmacist")
+
+@admin_bp.route('/pharmacists/edit/<int:id>', methods=['GET', 'POST'])
+def edit_pharmacist(id):
+    pharm = Pharmacist.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(pharm.user_id)
+    
+    form = PharmacistForm(pharmacist_id=pharm.id)
+    if form.validate_on_submit():
+        user.email = form.email.data
+        if form.password.data:
+            user.set_password(form.password.data)
+        pharm.first_name = form.first_name.data
+        pharm.last_name = form.last_name.data
+        pharm.phone = form.phone.data
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Updated Pharmacist '{pharm.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Pharmacist details updated successfully!', 'success')
+        return redirect(url_for('admin.pharmacists'))
+        
+    if request.method == 'GET':
+        form.first_name.data = pharm.first_name
+        form.last_name.data = pharm.last_name
+        form.email.data = user.email
+        form.phone.data = pharm.phone
+        
+    return render_template('admin/pharmacist_form.html', form=form, title="Edit Pharmacist")
+
+@admin_bp.route('/pharmacists/delete/<int:id>', methods=['POST'])
+def delete_pharmacist(id):
+    pharm = Pharmacist.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(pharm.user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('Pharmacist profile deleted successfully.', 'success')
+    return redirect(url_for('admin.pharmacists'))
+
+# -- BILLING EXECUTIVES --
+@admin_bp.route('/billing-executives')
+def billing_executives():
+    execs = BillingExecutive.query.filter_by(hospital_id=current_user.hospital_id).all()
+    return render_template('admin/billing_executives.html', billing_executives=execs)
+
+@admin_bp.route('/billing-executives/add', methods=['GET', 'POST'])
+def add_billing_executive():
+    form = BillingExecutiveForm()
+    if form.validate_on_submit():
+        user = User(email=form.email.data, role='BillingExecutive', hospital_id=current_user.hospital_id)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.flush()
+        
+        exec_profile = BillingExecutive(
+            user_id=user.id,
+            hospital_id=current_user.hospital_id,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            phone=form.phone.data
+        )
+        db.session.add(exec_profile)
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Added Billing Executive '{exec_profile.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Billing Executive registered successfully!', 'success')
+        return redirect(url_for('admin.billing_executives'))
+        
+    return render_template('admin/billing_executive_form.html', form=form, title="Add Billing Executive")
+
+@admin_bp.route('/billing-executives/edit/<int:id>', methods=['GET', 'POST'])
+def edit_billing_executive(id):
+    exec_profile = BillingExecutive.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(exec_profile.user_id)
+    
+    form = BillingExecutiveForm(executive_id=exec_profile.id)
+    if form.validate_on_submit():
+        user.email = form.email.data
+        if form.password.data:
+            user.set_password(form.password.data)
+        exec_profile.first_name = form.first_name.data
+        exec_profile.last_name = form.last_name.data
+        exec_profile.phone = form.phone.data
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Updated Billing Executive '{exec_profile.full_name}'", request.remote_addr, current_user.hospital_id)
+        flash('Billing Executive details updated successfully!', 'success')
+        return redirect(url_for('admin.billing_executives'))
+        
+    if request.method == 'GET':
+        form.first_name.data = exec_profile.first_name
+        form.last_name.data = exec_profile.last_name
+        form.email.data = user.email
+        form.phone.data = exec_profile.phone
+        
+    return render_template('admin/billing_executive_form.html', form=form, title="Edit Billing Executive")
+
+@admin_bp.route('/billing-executives/delete/<int:id>', methods=['POST'])
+def delete_billing_executive(id):
+    exec_profile = BillingExecutive.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    user = User.query.get(exec_profile.user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('Billing Executive profile deleted successfully.', 'success')
+    return redirect(url_for('admin.billing_executives'))
+
+# ----------------------------------------------------
+# DEPARTMENTS
+# ----------------------------------------------------
+
 @admin_bp.route('/departments')
 def departments():
-    depts = Department.query.order_by(Department.name).all()
+    depts = Department.query.filter_by(hospital_id=current_user.hospital_id).all()
     return render_template('admin/departments.html', departments=depts)
 
 @admin_bp.route('/departments/add', methods=['GET', 'POST'])
@@ -388,56 +531,52 @@ def add_department():
     form = DepartmentForm()
     if form.validate_on_submit():
         dept = Department(
+            hospital_id=current_user.hospital_id,
             name=form.name.data,
             description=form.description.data,
             icon_name=form.icon_name.data
         )
         db.session.add(dept)
         db.session.commit()
-        AuditService.log_action(current_user.id, f"Added Department: {dept.name}")
-        flash(f"Department {dept.name} added successfully!", "success")
+        AuditService.log_action(current_user.id, f"Added Department '{dept.name}'", request.remote_addr, current_user.hospital_id)
+        flash('Department added successfully!', 'success')
         return redirect(url_for('admin.departments'))
     return render_template('admin/department_form.html', form=form, title="Add Department")
 
 @admin_bp.route('/departments/edit/<int:id>', methods=['GET', 'POST'])
 def edit_department(id):
-    dept = Department.query.get_or_404(id)
-    form = DepartmentForm(dept_id=id)
-    
+    dept = Department.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    form = DepartmentForm()
     if form.validate_on_submit():
         dept.name = form.name.data
         dept.description = form.description.data
         dept.icon_name = form.icon_name.data
         db.session.commit()
-        AuditService.log_action(current_user.id, f"Edited Department: {dept.name}")
-        flash(f"Department {dept.name} updated successfully!", "success")
+        AuditService.log_action(current_user.id, f"Updated Department '{dept.name}'", request.remote_addr, current_user.hospital_id)
+        flash('Department updated successfully!', 'success')
         return redirect(url_for('admin.departments'))
         
-    elif request.method == 'GET':
+    if request.method == 'GET':
         form.name.data = dept.name
         form.description.data = dept.description
         form.icon_name.data = dept.icon_name
-        
     return render_template('admin/department_form.html', form=form, title="Edit Department")
 
 @admin_bp.route('/departments/delete/<int:id>', methods=['POST'])
 def delete_department(id):
-    dept = Department.query.get_or_404(id)
-    name = dept.name
-    try:
-        db.session.delete(dept)
-        db.session.commit()
-        AuditService.log_action(current_user.id, f"Deleted Department: {name}")
-        flash(f"Department {name} deleted successfully.", "success")
-    except Exception:
-        db.session.rollback()
-        flash(f"Cannot delete department {name} because it is assigned to doctors.", "danger")
+    dept = Department.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    db.session.delete(dept)
+    db.session.commit()
+    flash('Department deleted successfully.', 'success')
     return redirect(url_for('admin.departments'))
 
-# --- ROOMS ---
+# ----------------------------------------------------
+# ROOMS
+# ----------------------------------------------------
+
 @admin_bp.route('/rooms')
 def rooms():
-    rooms_list = Room.query.order_by(Room.room_number).all()
+    rooms_list = Room.query.filter_by(hospital_id=current_user.hospital_id).all()
     return render_template('admin/rooms.html', rooms=rooms_list)
 
 @admin_bp.route('/rooms/add', methods=['GET', 'POST'])
@@ -445,99 +584,58 @@ def add_room():
     form = RoomForm()
     if form.validate_on_submit():
         room = Room(
+            hospital_id=current_user.hospital_id,
             room_number=form.room_number.data,
             room_type=form.room_type.data,
-            status=form.status.data,
-            rate_per_day=form.rate_per_day.data
+            rate_per_day=form.rate_per_day.data,
+            status=form.status.data
         )
         db.session.add(room)
         db.session.commit()
-        AuditService.log_action(current_user.id, f"Added Room: {room.room_number}")
-        flash(f"Room {room.room_number} added successfully!", "success")
+        AuditService.log_action(current_user.id, f"Added Room '{room.room_number}'", request.remote_addr, current_user.hospital_id)
+        flash('Room added successfully!', 'success')
         return redirect(url_for('admin.rooms'))
     return render_template('admin/room_form.html', form=form, title="Add Room")
 
 @admin_bp.route('/rooms/edit/<int:id>', methods=['GET', 'POST'])
 def edit_room(id):
-    room = Room.query.get_or_404(id)
-    form = RoomForm(room_id=id)
-    
+    room = Room.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
+    form = RoomForm()
     if form.validate_on_submit():
         room.room_number = form.room_number.data
         room.room_type = form.room_type.data
-        room.status = form.status.data
         room.rate_per_day = form.rate_per_day.data
+        room.status = form.status.data
         db.session.commit()
-        AuditService.log_action(current_user.id, f"Edited Room: {room.room_number}")
-        flash(f"Room {room.room_number} details updated successfully!", "success")
+        AuditService.log_action(current_user.id, f"Updated Room '{room.room_number}'", request.remote_addr, current_user.hospital_id)
+        flash('Room updated successfully!', 'success')
         return redirect(url_for('admin.rooms'))
         
-    elif request.method == 'GET':
+    if request.method == 'GET':
         form.room_number.data = room.room_number
         form.room_type.data = room.room_type
-        form.status.data = room.status
         form.rate_per_day.data = room.rate_per_day
-        
+        form.status.data = room.status
     return render_template('admin/room_form.html', form=form, title="Edit Room")
 
 @admin_bp.route('/rooms/delete/<int:id>', methods=['POST'])
 def delete_room(id):
-    room = Room.query.get_or_404(id)
-    num = room.room_number
+    room = Room.query.filter_by(id=id, hospital_id=current_user.hospital_id).first_or_404()
     db.session.delete(room)
     db.session.commit()
-    AuditService.log_action(current_user.id, f"Deleted Room: {num}")
-    flash(f"Room {num} deleted successfully.", "success")
+    flash('Room deleted successfully.', 'success')
     return redirect(url_for('admin.rooms'))
 
-# --- APPOINTMENT MANAGEMENT ---
-@admin_bp.route('/appointments')
-def appointments():
-    page = request.args.get('page', 1, type=int)
-    pagination = Appointment.query.order_by(Appointment.appointment_date.desc()).paginate(page=page, per_page=15)
-    return render_template('admin/appointments.html', pagination=pagination)
-
-@admin_bp.route('/appointments/cancel/<int:id>', methods=['POST'])
-def cancel_appointment(id):
-    appt = Appointment.query.get_or_404(id)
-    appt.status = 'Cancelled'
-    db.session.commit()
-    
-    AuditService.log_action(current_user.id, f"Cancelled Appointment #{appt.id}")
-    
-    # Notify Patient and Doctor
-    from app.services.notification_service import NotificationService
-    NotificationService.create_notification(
-        appt.patient.user_id,
-        "Appointment Cancelled by Admin",
-        f"Your appointment with {appt.doctor.full_name} on {appt.appointment_date} has been cancelled."
-    )
-    NotificationService.create_notification(
-        appt.doctor.user_id,
-        "Appointment Cancelled by Admin",
-        f"The appointment of patient {appt.patient.full_name} on {appt.appointment_date} has been cancelled."
-    )
-    
-    flash(f"Appointment #{id} cancelled successfully.", "warning")
-    return redirect(url_for('admin.appointments'))
-
-# --- BILLS MANAGEMENT ---
-@admin_bp.route('/billing')
-def billing():
-    page = request.args.get('page', 1, type=int)
-    pagination = Bill.query.order_by(Bill.created_at.desc()).paginate(page=page, per_page=15)
-    return render_template('admin/billing.html', pagination=pagination)
-
-# --- REPORTS & EXPORT ---
-@admin_bp.route('/reports')
-def reports():
-    return render_template('admin/reports.html')
+# ----------------------------------------------------
+# REPORT EXPORTS & OTHER DEFAULTS
+# ----------------------------------------------------
 
 @admin_bp.route('/reports/export/<string:report_type>/<string:format_type>')
 def export_reports(report_type, format_type):
-    # Retrieve data based on type
+    h_id = current_user.hospital_id
+    
     if report_type == 'patients':
-        items = Patient.query.all()
+        items = Patient.query.join(Appointment).filter(Appointment.hospital_id == h_id).distinct().all()
         data = {
             'Patient ID': [p.id for p in items],
             'First Name': [p.first_name for p in items],
@@ -545,14 +643,13 @@ def export_reports(report_type, format_type):
             'Email': [p.user.email for p in items],
             'Phone': [p.phone for p in items],
             'Gender': [p.gender for p in items],
-            'Date of Birth': [p.date_of_birth.strftime('%Y-%m-%d') for p in items],
-            'Blood Group': [p.blood_group for p in items]
+            'Date of Birth': [p.date_of_birth.strftime('%Y-%m-%d') for p in items]
         }
         filename = f"patients_report_{datetime.now().strftime('%Y%m%d')}"
         sheet_name = "Patients"
         
     elif report_type == 'appointments':
-        items = Appointment.query.all()
+        items = Appointment.query.filter_by(hospital_id=h_id).all()
         data = {
             'Appointment ID': [a.id for a in items],
             'Patient': [a.patient.full_name for a in items],
@@ -566,7 +663,7 @@ def export_reports(report_type, format_type):
         sheet_name = "Appointments"
         
     elif report_type == 'revenue':
-        items = Bill.query.filter_by(status='Paid').all()
+        items = Bill.query.filter_by(hospital_id=h_id, status='Paid').all()
         data = {
             'Bill ID': [b.id for b in items],
             'Patient': [b.patient.full_name for b in items],
@@ -574,387 +671,38 @@ def export_reports(report_type, format_type):
             'Medicine Charges': [float(b.medicine_charges) for b in items],
             'Lab Charges': [float(b.lab_charges) for b in items],
             'Other Charges': [float(b.other_charges) for b in items],
-            'GST (18%)': [float(b.gst) for b in items],
+            'GST': [float(b.gst) for b in items],
             'Discount': [float(b.discount) for b in items],
-            'Grand Total': [float(b.grand_total) for b in items],
-            'Paid Date': [b.created_at.strftime('%Y-%m-%d') for b in items]
+            'Grand Total': [float(b.grand_total) for b in items]
         }
         filename = f"revenue_report_{datetime.now().strftime('%Y%m%d')}"
         sheet_name = "Revenue"
         
     elif report_type == 'doctors':
-        items = Doctor.query.all()
+        items = Doctor.query.filter_by(hospital_id=h_id).all()
         data = {
             'Doctor ID': [d.id for d in items],
             'Name': [d.full_name for d in items],
             'Department': [d.department.name for d in items],
             'Specialization': [d.specialization for d in items],
             'Phone': [d.phone for d in items],
-            'Consultation Fee': [float(d.consultation_fee) for d in items],
-            'Availability': [d.availability_status for d in items],
-            'Total Appointments': [len(d.appointments) for d in items]
+            'Fee': [float(d.consultation_fee) for d in items]
         }
         filename = f"doctors_report_{datetime.now().strftime('%Y%m%d')}"
         sheet_name = "Doctors"
     else:
-        flash("Invalid report type requested.", "danger")
-        return redirect(url_for('admin.reports'))
-
-    # Format export
-    if format_type == 'excel':
-        excel_data = ReportService.export_excel(data, sheet_name)
-        return Response(
-            excel_data,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": f"attachment;filename={filename}.xlsx"}
-        )
-    elif format_type == 'csv':
-        csv_data = ReportService.export_csv(data)
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-Disposition": f"attachment;filename={filename}.csv"}
-        )
+        flash("Invalid report type.", "danger")
+        return redirect(url_for('admin.dashboard'))
         
-    flash("Invalid format type requested.", "danger")
-    return redirect(url_for('admin.reports'))
+    if format_type == 'excel':
+        return ReportService.export_excel(data, filename, sheet_name)
+    elif format_type == 'csv':
+        return ReportService.export_csv(data, filename)
+    else:
+        flash("Unsupported export format.", "danger")
+        return redirect(url_for('admin.dashboard'))
 
-# --- AUDIT LOGS ---
 @admin_bp.route('/audit-logs')
 def audit_logs():
-    page = request.args.get('page', 1, type=int)
-    pagination = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=20)
-    return render_template('admin/audit_logs.html', pagination=pagination)
-
-@admin_bp.route('/search')
-@login_required
-def global_search():
-    q = request.args.get('q', '').strip()
-    results = {
-        'patients': [],
-        'doctors': [],
-        'appointments': [],
-        'prescriptions': [],
-        'lab_tests': [],
-        'bills': []
-    }
-    
-    if q:
-        # Search Patients
-        results['patients'] = Patient.query.filter(
-            (Patient.first_name.like(f"%{q}%")) |
-            (Patient.last_name.like(f"%{q}%")) |
-            (Patient.phone.like(f"%{q}%"))
-        ).limit(5).all()
-        
-        # Search Doctors
-        results['doctors'] = Doctor.query.filter(
-            (Doctor.first_name.like(f"%{q}%")) |
-            (Doctor.last_name.like(f"%{q}%")) |
-            (Doctor.specialization.like(f"%{q}%"))
-        ).limit(5).all()
-        
-        # Search Appointments
-        results['appointments'] = Appointment.query.join(Patient).filter(
-            (Patient.first_name.like(f"%{q}%")) |
-            (Patient.last_name.like(f"%{q}%"))
-        ).limit(5).all()
-        
-        # Search Prescriptions
-        from app.models.appointment import Prescription
-        results['prescriptions'] = Prescription.query.join(Patient).filter(
-            (Patient.first_name.like(f"%{q}%")) |
-            (Patient.last_name.like(f"%{q}%")) |
-            (Prescription.diagnosis.like(f"%{q}%"))
-        ).limit(5).all()
-        
-        # Search Lab Tests
-        results['lab_tests'] = LabTest.query.join(Patient).filter(
-            (Patient.first_name.like(f"%{q}%")) |
-            (Patient.last_name.like(f"%{q}%")) |
-            (LabTest.sample_id.like(f"%{q}%")) |
-            (LabTest.test_name.like(f"%{q}%"))
-        ).limit(5).all()
-        
-        # Search Bills
-        results['bills'] = Bill.query.join(Patient).filter(
-            (Patient.first_name.like(f"%{q}%")) |
-            (Patient.last_name.like(f"%{q}%"))
-        ).limit(5).all()
-        
-    return render_template('admin/search_results.html', query=q, results=results)
-
-
-# --- CHART DATA API (For dashboard charts rendering via Chart.js) ---
-@admin_bp.route('/api/dashboard-charts')
-def api_dashboard_charts():
-    # 1. Appointments per month (last 6 months)
-    # 2. Revenue per month (last 6 months)
-    # For SQLite compatibility, we can query dates, group by month, and sort.
-    # To keep it extremely robust and clean, we will query appointments from db and aggregate in python.
-    appts = Appointment.query.all()
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    
-    appt_counts = [0] * 12
-    revenue_totals = [0.00] * 12
-    lab_revenue = [0.00] * 12
-    pharmacy_revenue = [0.00] * 12
-    consultation_revenue = [0.00] * 12
-    
-    # Fill in monthly aggregates
-    for a in appts:
-        month_idx = a.appointment_date.month - 1
-        appt_counts[month_idx] += 1
-        
-    bills = Bill.query.filter_by(status='Paid').all()
-    for b in bills:
-        month_idx = b.created_at.month - 1
-        revenue_totals[month_idx] += float(b.grand_total)
-        lab_revenue[month_idx] += float(b.lab_charges or 0)
-        pharmacy_revenue[month_idx] += float(b.medicine_charges or 0)
-        consultation_revenue[month_idx] += float(b.consultation_fee or 0)
-        
-    # Patient growth (registered count by month)
-    patients = Patient.query.all()
-    patient_counts = [0] * 12
-    for p in patients:
-        month_idx = p.created_at.month - 1
-        patient_counts[month_idx] += 1
-        
-    # Doctor performance (number of appointments completed per doctor)
-    doctors_list = Doctor.query.all()
-    doc_labels = [d.full_name for d in doctors_list]
-    doc_performance = [
-        Appointment.query.filter_by(doctor_id=d.id, status='Completed').count() for d in doctors_list
-    ]
-
-    # Lab tests categories summary
-    lab_categories = {}
-    completed_labs = LabTest.query.filter(LabTest.status.in_(['Completed', 'Delivered'])).all()
-    for l in completed_labs:
-        lab_categories[l.test_category] = lab_categories.get(l.test_category, 0) + 1
-
-    return {
-        'months': months,
-        'appointments': appt_counts,
-        'revenue': revenue_totals,
-        'lab_revenue': lab_revenue,
-        'pharmacy_revenue': pharmacy_revenue,
-        'consultation_revenue': consultation_revenue,
-        'patient_growth': patient_counts,
-        'doctor_performance': {
-            'labels': doc_labels,
-            'data': doc_performance
-        },
-        'lab_categories': {
-            'labels': list(lab_categories.keys()),
-            'data': list(lab_categories.values())
-        }
-    }
-
-# --- SYSTEM SETTINGS ---
-@admin_bp.route('/settings', methods=['GET', 'POST'])
-def settings():
-    from app.models.setting import SystemSetting
-    from app.services.audit_service import AuditService
-    
-    hospital_name_setting = SystemSetting.query.filter_by(setting_key='hospital_name').first()
-    if not hospital_name_setting:
-        hospital_name_setting = SystemSetting(setting_key='hospital_name', setting_value='Hospital Portal')
-        db.session.add(hospital_name_setting)
-        db.session.commit()
-        
-    if request.method == 'POST':
-        new_name = request.form.get('hospital_name', '').strip()
-        if new_name:
-            hospital_name_setting.setting_value = new_name
-            db.session.commit()
-            AuditService.log_action(current_user.id, f"Updated hospital name setting to: {new_name}", request.remote_addr)
-            flash("System settings updated successfully!", "success")
-            return redirect(url_for('admin.settings'))
-        else:
-            flash("Hospital name cannot be empty.", "danger")
-            
-    return render_template('admin/settings.html', hospital_name=hospital_name_setting.setting_value)
-
-# --- LAB TESTS MANAGEMENT ---
-@admin_bp.route('/lab-tests')
-def lab_tests():
-    search = request.args.get('search', '')
-    status_filter = request.args.get('status', '')
-    category_filter = request.args.get('category', '')
-    page = request.args.get('page', 1, type=int)
-    
-    query = LabTest.query
-    
-    if search:
-        from app.models.user import Patient
-        query = query.join(Patient).filter(
-            (Patient.first_name.like(f"%{search}%")) |
-            (Patient.last_name.like(f"%{search}%"))
-        )
-    if status_filter:
-        query = query.filter(LabTest.status == status_filter)
-    if category_filter:
-        query = query.filter(LabTest.test_category == category_filter)
-    
-    pagination = query.order_by(LabTest.test_date.desc()).paginate(page=page, per_page=15)
-    
-    # Stats
-    stats = {
-        'total': LabTest.query.count(),
-        'pending': LabTest.query.filter(~LabTest.status.in_(['Completed', 'Delivered', 'Cancelled'])).count(),
-        'completed': LabTest.query.filter(LabTest.status.in_(['Completed', 'Delivered'])).count(),
-        'revenue': float(db.session.query(func.sum(LabTest.cost)).filter(LabTest.status.in_(['Completed', 'Delivered'])).scalar() or 0)
-    }
-    
-    return render_template(
-        'admin/lab_tests.html',
-        pagination=pagination,
-        stats=stats,
-        search=search,
-        status_filter=status_filter,
-        category_filter=category_filter
-    )
-
-
-# --- LAB TEST TEMPLATES CRUD ---
-@admin_bp.route('/lab-templates')
-@login_required
-def lab_templates():
-    templates = LabTestTemplate.query.order_by(LabTestTemplate.test_category, LabTestTemplate.test_name).all()
-    return render_template('admin/lab_templates.html', templates=templates)
-
-@admin_bp.route('/lab-templates/add', methods=['GET', 'POST'])
-@login_required
-def add_lab_template():
-    form = LabTestTemplateForm()
-    if form.validate_on_submit():
-        template = LabTestTemplate(
-            test_name=form.test_name.data.strip(),
-            test_category=form.test_category.data,
-            normal_range_min=form.normal_range_min.data,
-            normal_range_max=form.normal_range_max.data,
-            normal_range_text=form.normal_range_text.data.strip() if form.normal_range_text.data else None,
-            unit=form.unit.data.strip() if form.unit.data else None,
-            age_min=form.age_min.data if form.age_min.data is not None else 0,
-            age_max=form.age_max.data if form.age_max.data is not None else 120,
-            gender=form.gender.data,
-            critical_range_min=form.critical_range_min.data,
-            critical_range_max=form.critical_range_max.data,
-            cost=form.cost.data
-        )
-        db.session.add(template)
-        db.session.commit()
-        AuditService.log_action(current_user.id, f"Created Lab Test Template: {template.test_name}", request.remote_addr)
-        flash(f"Test template '{template.test_name}' added successfully!", 'success')
-        return redirect(url_for('admin.lab_templates'))
-    return render_template('admin/lab_template_form.html', form=form, title="Add Lab Test Parameter")
-
-@admin_bp.route('/lab-templates/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_lab_template(id):
-    template = LabTestTemplate.query.get_or_404(id)
-    form = LabTestTemplateForm(obj=template)
-    if form.validate_on_submit():
-        template.test_name = form.test_name.data.strip()
-        template.test_category = form.test_category.data
-        template.normal_range_min = form.normal_range_min.data
-        template.normal_range_max = form.normal_range_max.data
-        template.normal_range_text = form.normal_range_text.data.strip() if form.normal_range_text.data else None
-        template.unit = form.unit.data.strip() if form.unit.data else None
-        template.age_min = form.age_min.data if form.age_min.data is not None else 0
-        template.age_max = form.age_max.data if form.age_max.data is not None else 120
-        template.gender = form.gender.data
-        template.critical_range_min = form.critical_range_min.data
-        template.critical_range_max = form.critical_range_max.data
-        template.cost = form.cost.data
-        db.session.commit()
-        AuditService.log_action(current_user.id, f"Edited Lab Test Template ID: {template.id}", request.remote_addr)
-        flash(f"Test template '{template.test_name}' updated successfully!", 'success')
-        return redirect(url_for('admin.lab_templates'))
-    return render_template('admin/lab_template_form.html', form=form, title="Edit Lab Test Parameter")
-
-@admin_bp.route('/lab-templates/delete/<int:id>', methods=['POST'])
-@login_required
-def delete_lab_template(id):
-    template = LabTestTemplate.query.get_or_404(id)
-    db.session.delete(template)
-    db.session.commit()
-    AuditService.log_action(current_user.id, f"Deleted Lab Test Template ID: {id}", request.remote_addr)
-    flash(f"Test template deleted successfully!", 'success')
-    return redirect(url_for('admin.lab_templates'))
-
-
-# --- LAB PACKAGES CRUD ---
-@admin_bp.route('/lab-packages')
-@login_required
-def lab_packages():
-    packages = LabPackage.query.order_by(LabPackage.name).all()
-    return render_template('admin/lab_packages.html', packages=packages)
-
-@admin_bp.route('/lab-packages/add', methods=['GET', 'POST'])
-@login_required
-def add_lab_package():
-    form = LabPackageForm()
-    templates_list = LabTestTemplate.query.order_by(LabTestTemplate.test_name).all()
-    form.templates.choices = [(t.id, f"{t.test_name} ({t.test_category})") for t in templates_list]
-    
-    if form.validate_on_submit():
-        package = LabPackage(
-            name=form.name.data.strip(),
-            description=form.description.data.strip() if form.description.data else None,
-            cost=form.cost.data
-        )
-        selected_template_ids = form.templates.data
-        selected_templates = LabTestTemplate.query.filter(LabTestTemplate.id.in_(selected_template_ids)).all()
-        package.templates = selected_templates
-        
-        db.session.add(package)
-        db.session.commit()
-        
-        AuditService.log_action(current_user.id, f"Created Lab Package: {package.name}", request.remote_addr)
-        flash(f"Lab Package '{package.name}' added successfully!", 'success')
-        return redirect(url_for('admin.lab_packages'))
-        
-    return render_template('admin/lab_package_form.html', form=form, title="Add Laboratory Package")
-
-@admin_bp.route('/lab-packages/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_lab_package(id):
-    package = LabPackage.query.get_or_404(id)
-    form = LabPackageForm(obj=package)
-    
-    templates_list = LabTestTemplate.query.order_by(LabTestTemplate.test_name).all()
-    form.templates.choices = [(t.id, f"{t.test_name} ({t.test_category})") for t in templates_list]
-    
-    if request.method == 'GET':
-        form.templates.data = [t.id for t in package.templates]
-        
-    if form.validate_on_submit():
-        package.name = form.name.data.strip()
-        package.description = form.description.data.strip() if form.description.data else None
-        package.cost = form.cost.data
-        
-        selected_template_ids = form.templates.data
-        selected_templates = LabTestTemplate.query.filter(LabTestTemplate.id.in_(selected_template_ids)).all()
-        package.templates = selected_templates
-        
-        db.session.commit()
-        
-        AuditService.log_action(current_user.id, f"Updated Lab Package ID: {package.id}", request.remote_addr)
-        flash(f"Lab Package '{package.name}' updated successfully!", 'success')
-        return redirect(url_for('admin.lab_packages'))
-        
-    return render_template('admin/lab_package_form.html', form=form, title="Edit Laboratory Package")
-
-@admin_bp.route('/lab-packages/delete/<int:id>', methods=['POST'])
-@login_required
-def delete_lab_package(id):
-    package = LabPackage.query.get_or_404(id)
-    db.session.delete(package)
-    db.session.commit()
-    AuditService.log_action(current_user.id, f"Deleted Lab Package ID: {id}", request.remote_addr)
-    flash("Lab package deleted successfully!", 'success')
-    return redirect(url_for('admin.lab_packages'))
-
+    logs = AuditLog.query.filter_by(hospital_id=current_user.hospital_id).order_by(AuditLog.created_at.desc()).all()
+    return render_template('admin/audit_logs.html', logs=logs)

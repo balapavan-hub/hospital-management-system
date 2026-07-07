@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Hospital Registration - MediConnect India{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-4">
+                <i class="bi bi-hospital fs-1 text-primary"></i>
+                <h2 class="fw-bold mt-2">Join MediConnect India SaaS Platform</h2>
+                <p class="text-muted">Register your hospital, clinic, or diagnostic center to get an isolated digital workspace</p>
+            </div>
+
+            <div class="card border-0 shadow rounded-4 bg-white">
+                <div class="card-body p-4 p-md-5">
+                    <form action="{{ url_for('auth.register_hospital') }}" method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+
+                        <!-- Section 1: Hospital Details -->
+                        <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-building me-2"></i>1. Hospital / Organization Details</h5>
+                        <hr class="mb-4">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Hospital Name *</label>
+                            {{ form.hospital_name(class="form-control form-control-lg", placeholder="Enter Hospital/Clinic official name") }}
+                            {% for error in form.hospital_name.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Registration / License Number *</label>
+                                {{ form.registration_number(class="form-control", placeholder="Official registration ID") }}
+                                {% for error in form.registration_number.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Hospital Type *</label>
+                                {{ form.hospital_type(class="form-select") }}
+                                {% for error in form.hospital_type.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Address *</label>
+                            {{ form.address(class="form-control", rows="3", placeholder="Street name, landmark, address") }}
+                            {% for error in form.address.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">State *</label>
+                                {{ form.state(class="form-control", placeholder="e.g. Maharashtra") }}
+                                {% for error in form.state.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">District *</label>
+                                {{ form.district(class="form-control", placeholder="e.g. Pune") }}
+                                {% for error in form.district.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">City *</label>
+                                {{ form.city(class="form-control", placeholder="e.g. Pune") }}
+                                {% for error in form.city.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Pincode *</label>
+                                {{ form.pincode(class="form-control", placeholder="6 digit code") }}
+                                {% for error in form.pincode.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Website URL (Optional)</label>
+                                {{ form.website(class="form-control", placeholder="https://example.com") }}
+                                {% for error in form.website.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Hospital Email *</label>
+                                {{ form.email(class="form-control", placeholder="contact@hospital.com") }}
+                                {% for error in form.email.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Hospital Contact Phone *</label>
+                                {{ form.phone(class="form-control", placeholder="Landline or mobile") }}
+                                {% for error in form.phone.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Upload Logo (Optional)</label>
+                                {{ form.logo(class="form-control") }}
+                                {% for error in form.logo.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Upload License Document (Optional)</label>
+                                {{ form.license_document(class="form-control") }}
+                                {% for error in form.license_document.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Admin Credentials -->
+                        <h5 class="fw-bold mb-3 mt-5 text-primary"><i class="bi bi-person-badge me-2"></i>2. Administrator Account Details</h5>
+                        <hr class="mb-4">
+
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">First Name *</label>
+                                {{ form.admin_first_name(class="form-control", placeholder="Admin first name") }}
+                                {% for error in form.admin_first_name.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Last Name *</label>
+                                {{ form.admin_last_name(class="form-control", placeholder="Admin last name") }}
+                                {% for error in form.admin_last_name.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Admin Login Email *</label>
+                                {{ form.admin_email(class="form-control", placeholder="admin@hospital.com") }}
+                                {% for error in form.admin_email.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Admin Phone Number *</label>
+                                {{ form.admin_phone(class="form-control", placeholder="Mobile number") }}
+                                {% for error in form.admin_phone.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Login Password *</label>
+                                {{ form.admin_password(class="form-control", placeholder="Minimum 6 characters") }}
+                                {% for error in form.admin_password.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Confirm Password *</label>
+                                {{ form.admin_confirm_password(class="form-control", placeholder="Re-enter password") }}
+                                {% for error in form.admin_confirm_password.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold fs-5 shadow">
+                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>Submit Organization Registration
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

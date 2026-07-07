@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, DecimalField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Regexp, Optional, ValidationError, NumberRange
-from app.models.user import User, Doctor, Receptionist, LabTechnician
+from app.models.user import User, Doctor, Receptionist, LabTechnician, Nurse, Pharmacist, BillingExecutive
 from app.models.department import Department
 from app.models.room import Room
 
@@ -243,3 +243,144 @@ class LabTechnicianForm(FlaskForm):
             if self.technician_id and technician.id == self.technician_id:
                 return
             raise ValidationError('Employee ID is already assigned.')
+
+
+class NurseForm(FlaskForm):
+    first_name = StringField('First Name', validators=[
+        DataRequired(message="First name is required"),
+        Length(min=2, max=50)
+    ])
+    last_name = StringField('Last Name', validators=[
+        DataRequired(message="Last name is required"),
+        Length(min=2, max=50)
+    ])
+    email = StringField('Email Address', validators=[
+        DataRequired(message="Email is required"),
+        Email(message="Invalid email address")
+    ])
+    phone = StringField('Phone Number', validators=[
+        DataRequired(message="Phone number is required"),
+        Regexp(r'^\+?[0-9]{10,15}$', message="Phone number must be between 10 to 15 digits")
+    ])
+    password = PasswordField('Password', validators=[
+        Optional(),
+        Length(min=6, message="Password must be at least 6 characters long")
+    ])
+    confirm_password = PasswordField('Confirm Password', validators=[
+        EqualTo('password', message="Passwords must match")
+    ])
+    submit = SubmitField('Save Nurse')
+
+    def __init__(self, nurse_id=None, *args, **kwargs):
+        super(NurseForm, self).__init__(*args, **kwargs)
+        self.nurse_id = nurse_id
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            if self.nurse_id:
+                nurse = Nurse.query.get(self.nurse_id)
+                if nurse and nurse.user_id == user.id:
+                    return
+            raise ValidationError('Email is already registered by another user.')
+
+    def validate_phone(self, phone):
+        nurse = Nurse.query.filter_by(phone=phone.data).first()
+        if nurse:
+            if self.nurse_id and nurse.id == self.nurse_id:
+                return
+            raise ValidationError('Phone number is already in use.')
+
+
+class PharmacistForm(FlaskForm):
+    first_name = StringField('First Name', validators=[
+        DataRequired(message="First name is required"),
+        Length(min=2, max=50)
+    ])
+    last_name = StringField('Last Name', validators=[
+        DataRequired(message="Last name is required"),
+        Length(min=2, max=50)
+    ])
+    email = StringField('Email Address', validators=[
+        DataRequired(message="Email is required"),
+        Email(message="Invalid email address")
+    ])
+    phone = StringField('Phone Number', validators=[
+        DataRequired(message="Phone number is required"),
+        Regexp(r'^\+?[0-9]{10,15}$', message="Phone number must be between 10 to 15 digits")
+    ])
+    password = PasswordField('Password', validators=[
+        Optional(),
+        Length(min=6, message="Password must be at least 6 characters long")
+    ])
+    confirm_password = PasswordField('Confirm Password', validators=[
+        EqualTo('password', message="Passwords must match")
+    ])
+    submit = SubmitField('Save Pharmacist')
+
+    def __init__(self, pharmacist_id=None, *args, **kwargs):
+        super(PharmacistForm, self).__init__(*args, **kwargs)
+        self.pharmacist_id = pharmacist_id
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            if self.pharmacist_id:
+                pharmacist = Pharmacist.query.get(self.pharmacist_id)
+                if pharmacist and pharmacist.user_id == user.id:
+                    return
+            raise ValidationError('Email is already registered by another user.')
+
+    def validate_phone(self, phone):
+        pharmacist = Pharmacist.query.filter_by(phone=phone.data).first()
+        if pharmacist:
+            if self.pharmacist_id and pharmacist.id == self.pharmacist_id:
+                return
+            raise ValidationError('Phone number is already in use.')
+
+
+class BillingExecutiveForm(FlaskForm):
+    first_name = StringField('First Name', validators=[
+        DataRequired(message="First name is required"),
+        Length(min=2, max=50)
+    ])
+    last_name = StringField('Last Name', validators=[
+        DataRequired(message="Last name is required"),
+        Length(min=2, max=50)
+    ])
+    email = StringField('Email Address', validators=[
+        DataRequired(message="Email is required"),
+        Email(message="Invalid email address")
+    ])
+    phone = StringField('Phone Number', validators=[
+        DataRequired(message="Phone number is required"),
+        Regexp(r'^\+?[0-9]{10,15}$', message="Phone number must be between 10 to 15 digits")
+    ])
+    password = PasswordField('Password', validators=[
+        Optional(),
+        Length(min=6, message="Password must be at least 6 characters long")
+    ])
+    confirm_password = PasswordField('Confirm Password', validators=[
+        EqualTo('password', message="Passwords must match")
+    ])
+    submit = SubmitField('Save Billing Executive')
+
+    def __init__(self, executive_id=None, *args, **kwargs):
+        super(BillingExecutiveForm, self).__init__(*args, **kwargs)
+        self.executive_id = executive_id
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            if self.executive_id:
+                exec_profile = BillingExecutive.query.get(self.executive_id)
+                if exec_profile and exec_profile.user_id == user.id:
+                    return
+            raise ValidationError('Email is already registered by another user.')
+
+    def validate_phone(self, phone):
+        exec_profile = BillingExecutive.query.filter_by(phone=phone.data).first()
+        if exec_profile:
+            if self.executive_id and exec_profile.id == self.executive_id:
+                return
+            raise ValidationError('Phone number is already in use.')

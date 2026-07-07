@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Dispense Medicines - MediConnect India{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 bg-white">
+                <div class="card-header bg-white border-0 py-3 d-flex align-items-center">
+                    <a href="{{ url_for('pharmacist.dashboard') }}" class="btn btn-link p-0 me-3 text-decoration-none text-dark fs-4"><i class="bi bi-arrow-left"></i></a>
+                    <h5 class="mb-0 fw-bold">Prescription Verification Desk</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Patient Summary Card -->
+                    <div class="p-3 bg-light rounded-3 mb-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <span class="small text-uppercase text-muted d-block fw-bold">Patient Details</span>
+                                <span class="fw-bold">{{ prescription.patient.full_name }}</span>
+                                <span class="small d-block text-muted">{{ prescription.patient.gender }}, {{ prescription.patient.age }} Years</span>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="small text-uppercase text-muted d-block fw-bold">Prescribing Doctor</span>
+                                <span>{{ prescription.doctor.full_name }}</span>
+                                <span class="small d-block text-muted">{{ prescription.doctor.specialization }}</span>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="small text-uppercase text-muted d-block fw-bold">Prescription Date</span>
+                                <span>{{ prescription.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Symptoms and Diagnosis -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-muted small text-uppercase">Diagnosis & Remarks</h6>
+                        <p class="mb-1"><strong>Symptoms:</strong> {{ prescription.symptoms or 'None' }}</p>
+                        <p class="mb-1"><strong>Diagnosis:</strong> {{ prescription.diagnosis or 'None' }}</p>
+                        <p class="mb-0"><strong>Remarks:</strong> {{ prescription.remarks or 'None' }}</p>
+                    </div>
+
+                    <!-- Prescribed Medicines Check -->
+                    <h6 class="fw-bold text-muted small text-uppercase mb-3">Prescribed Medicine Checklist</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Medicine Name</th>
+                                    <th>Schedule (Morning-Afternoon-Night)</th>
+                                    <th>Duration</th>
+                                    <th>Stock Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in prescription.medicines %}
+                                    <tr>
+                                        <td class="fw-bold">{{ item.medicine_name }}</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border me-1">Morning: {% if item.dosage_morning %}✔{% else %}❌{% endif %}</span>
+                                            <span class="badge bg-light text-dark border me-1">Afternoon: {% if item.dosage_afternoon %}✔{% else %}❌{% endif %}</span>
+                                            <span class="badge bg-light text-dark border">Night: {% if item.dosage_night %}✔{% else %}❌{% endif %}</span>
+                                        </td>
+                                        <td>{{ item.duration_days }} days</td>
+                                        <td>
+                                            <!-- Simple stock indicator check -->
+                                            <span class="badge bg-success">Available</span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Confirm Action -->
+                    <form action="{{ url_for('pharmacist.dispense', prescription_id=prescription.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="alert alert-info border-0 rounded-3 small">
+                            <i class="bi bi-info-circle-fill me-2 text-primary"></i>
+                            Confirming this action will automatically reduce stock quantities, generate a pharmacy bill, and add charges to the patient's centralized invoice.
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-3">
+                            <i class="bi bi-box-seam me-1"></i>Verify & Dispense Prescription
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
