@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(150) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('Admin', 'Doctor', 'Receptionist', 'Patient') NOT NULL,
+    role ENUM('Admin', 'Doctor', 'Receptionist', 'Patient', 'LabTechnician') NOT NULL,
     profile_photo VARCHAR(255) DEFAULT 'default_profile.png',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -185,3 +185,106 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 15. Lab Technicians Table
+CREATE TABLE IF NOT EXISTS lab_technicians (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL UNIQUE,
+    employee_id VARCHAR(50) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 16. Lab Packages Table
+CREATE TABLE IF NOT EXISTS lab_packages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    cost DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 17. Lab Test Templates Table
+CREATE TABLE IF NOT EXISTS lab_test_templates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    test_name VARCHAR(100) NOT NULL UNIQUE,
+    test_category VARCHAR(100) NOT NULL,
+    normal_range_min DOUBLE,
+    normal_range_max DOUBLE,
+    normal_range_text VARCHAR(200),
+    unit VARCHAR(50),
+    age_min INT DEFAULT 0,
+    age_max INT DEFAULT 150,
+    gender VARCHAR(10) DEFAULT 'Both',
+    critical_range_min DOUBLE,
+    critical_range_max DOUBLE,
+    cost DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 18. Lab Package Tests Mapping Table
+CREATE TABLE IF NOT EXISTS lab_package_tests (
+    package_id INT NOT NULL,
+    template_id INT NOT NULL,
+    PRIMARY KEY (package_id, template_id),
+    FOREIGN KEY (package_id) REFERENCES lab_packages(id) ON DELETE CASCADE,
+    FOREIGN KEY (template_id) REFERENCES lab_test_templates(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 19. Lab Tests Table
+CREATE TABLE IF NOT EXISTS lab_tests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sample_id VARCHAR(50) NOT NULL UNIQUE,
+    patient_id INT NOT NULL,
+    doctor_id INT,
+    lab_technician_id INT,
+    package_id INT,
+    single_template_id INT,
+    test_name VARCHAR(150) NOT NULL,
+    test_category VARCHAR(100) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'Sample Collected',
+    test_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    result_date TIMESTAMP NULL,
+    cost DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    payment_status VARCHAR(50) DEFAULT 'Pending',
+    is_critical BOOLEAN DEFAULT FALSE,
+    remarks TEXT,
+    interpretation TEXT,
+    report_file VARCHAR(255),
+    qr_code_path VARCHAR(255),
+    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+    FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL,
+    FOREIGN KEY (lab_technician_id) REFERENCES lab_technicians(id) ON DELETE SET NULL,
+    FOREIGN KEY (package_id) REFERENCES lab_packages(id) ON DELETE SET NULL,
+    FOREIGN KEY (single_template_id) REFERENCES lab_test_templates(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 20. Lab Test Results Table
+CREATE TABLE IF NOT EXISTS lab_test_results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lab_test_id INT NOT NULL,
+    template_id INT NOT NULL,
+    observed_value VARCHAR(100) NOT NULL,
+    result_status VARCHAR(50) DEFAULT 'Normal',
+    normal_range_used VARCHAR(200),
+    unit_used VARCHAR(50),
+    FOREIGN KEY (lab_test_id) REFERENCES lab_tests(id) ON DELETE CASCADE,
+    FOREIGN KEY (template_id) REFERENCES lab_test_templates(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 21. Lab Inventory Table
+CREATE TABLE IF NOT EXISTS lab_inventory (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    item_name VARCHAR(100) NOT NULL UNIQUE,
+    category VARCHAR(100) NOT NULL,
+    quantity INT NOT NULL DEFAULT 0,
+    unit VARCHAR(50) NOT NULL DEFAULT 'units',
+    min_stock_level INT NOT NULL DEFAULT 10,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

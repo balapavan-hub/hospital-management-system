@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Lab Technician Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold mb-1"><i class="bi bi-clipboard2-pulse-fill text-primary me-2"></i>Welcome, {{ tech.full_name }}</h2>
+        <p class="text-muted mb-0">Laboratory Management System Portal | Employee ID: <strong>{{ tech.employee_id }}</strong></p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 card-glass animate__animated animate__fadeInUp">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h3 class="fw-bold text-primary mb-1">{{ pending_samples }}</h3>
+                    <span class="text-muted small fw-semibold">Pending Samples / Orders</span>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+                    <i class="bi bi-hourglass-split fs-3"></i>
+                </div>
+            </div>
+            <a href="{{ url_for('lab_technician.orders', status='Sample Collected') }}" class="btn btn-link btn-sm p-0 text-decoration-none mt-3 text-primary fw-bold">View pending orders <i class="bi bi-arrow-right"></i></a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 card-glass animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h3 class="fw-bold text-success mb-1">{{ total_processed }}</h3>
+                    <span class="text-muted small fw-semibold">Tests Completed</span>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
+                    <i class="bi bi-check2-circle fs-3"></i>
+                </div>
+            </div>
+            <a href="{{ url_for('lab_technician.orders', status='Completed') }}" class="btn btn-link btn-sm p-0 text-decoration-none mt-3 text-success fw-bold">View completed tests <i class="bi bi-arrow-right"></i></a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 card-glass animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h3 class="fw-bold text-danger mb-1">{{ low_stock_count }}</h3>
+                    <span class="text-muted small fw-semibold">Low Stock Inventory Items</span>
+                </div>
+                <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3">
+                    <i class="bi bi-exclamation-triangle fs-3"></i>
+                </div>
+            </div>
+            <a href="{{ url_for('lab_technician.inventory') }}" class="btn btn-link btn-sm p-0 text-decoration-none mt-3 text-danger fw-bold">Manage stock levels <i class="bi bi-arrow-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Test Orders -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 card-glass">
+            <h5 class="fw-bold mb-3"><i class="bi bi-list-task text-primary me-2"></i>Recent Lab Orders</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th>Sample ID</th>
+                            <th>Patient</th>
+                            <th>Test / Package</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ order.sample_id }}</td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ order.patient.full_name }}</div>
+                                <div class="small text-muted">{{ order.patient.gender }}, {{ order.patient.age }} Yrs</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ order.test_name }}</div>
+                                <span class="badge bg-info-subtle text-info-emphasis rounded-pill small">{{ order.test_category }}</span>
+                            </td>
+                            <td>{{ order.test_date.strftime('%d-%b-%Y') }}</td>
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if order.status == 'Sample Collected' %}bg-warning-subtle text-warning-emphasis
+                                    {% elif order.status == 'Sample Received' %}bg-info-subtle text-info-emphasis
+                                    {% elif order.status == 'Under Processing' %}bg-primary-subtle text-primary-emphasis
+                                    {% elif order.status == 'Quality Check' %}bg-secondary-subtle text-secondary-emphasis
+                                    {% elif order.status == 'Completed' %}bg-success-subtle text-success-emphasis
+                                    {% elif order.status == 'Delivered' %}bg-success
+                                    {% else %}bg-light text-muted
+                                    {% endif %} px-2.5 py-1.5">
+                                    {{ order.status }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                {% if order.status != 'Completed' and order.status != 'Delivered' %}
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <form method="POST" action="{{ url_for('lab_technician.process_sample', test_id=order.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                                {% if order.status == 'Sample Collected' %}Receive Sample
+                                                {% elif order.status == 'Sample Received' %}Start Process
+                                                {% elif order.status == 'Under Processing' %}Send to QC
+                                                {% elif order.status == 'Quality Check' %}Complete
+                                                {% endif %}
+                                            </button>
+                                        </form>
+                                        {% if order.status == 'Quality Check' or order.status == 'Under Processing' %}
+                                            <a href="{{ url_for('lab_technician.record_results', test_id=order.id) }}" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-pencil-square me-1"></i>Enter Results</a>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <a href="{{ url_for('doctor.view_lab_result', test_id=order.id) }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-eye"></i> View</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No recent laboratory orders found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Inventory Alerts -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 card-glass">
+            <h5 class="fw-bold mb-3 text-danger"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Low Stock Alert</h5>
+            <div class="list-group list-group-flush">
+                {% for item in low_stock_items %}
+                <div class="list-group-item bg-transparent px-0 py-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="fw-bold text-dark">{{ item.item_name }}</div>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill small">{{ item.category }}</span>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-danger">{{ item.quantity }} / {{ item.min_stock_level }} {{ item.unit }}</div>
+                        <small class="text-muted">Min stock level</small>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-check2-circle text-success fs-1 mb-2 d-block"></i>
+                    All reagent and PPE inventory stock levels are normal.
+                </div>
+                {% endfor %}
+            </div>
+            {% if low_stock_items %}
+            <a href="{{ url_for('lab_technician.inventory') }}" class="btn btn-outline-danger w-100 rounded-pill mt-3"><i class="bi bi-box-seam me-2"></i>Update Lab Inventory</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

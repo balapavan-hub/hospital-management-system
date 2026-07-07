@@ -39,6 +39,7 @@ def create_app(config_class=Config):
     from app.routes.doctor import doctor_bp
     from app.routes.patient import patient_bp
     from app.routes.receptionist import receptionist_bp
+    from app.routes.lab_technician import lab_technician_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -46,6 +47,7 @@ def create_app(config_class=Config):
     app.register_blueprint(doctor_bp, url_prefix='/doctor')
     app.register_blueprint(patient_bp, url_prefix='/patient')
     app.register_blueprint(receptionist_bp, url_prefix='/receptionist')
+    app.register_blueprint(lab_technician_bp, url_prefix='/lab-technician')
 
     # Context processors to inject global data
     @app.context_processor

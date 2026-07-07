@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Laboratory Parameters (Test Templates){% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4 align-items-center animate__animated animate__fadeIn">
+    <div class="col-md-6">
+        <h2 class="fw-bold mb-1"><i class="bi bi-activity text-primary me-2"></i>Lab Test Parameters</h2>
+        <p class="text-muted mb-0">Configure normal ranges, units, and critical alert limits for laboratory tests</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <a href="{{ url_for('admin.add_lab_template') }}" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-plus-circle me-2"></i>Add Lab Parameter
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 card-glass animate__animated animate__fadeInUp">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th>ID</th>
+                    <th>Parameter Name</th>
+                    <th>Category</th>
+                    <th>Reference Range</th>
+                    <th>Unit</th>
+                    <th>Critical Alert Limits</th>
+                    <th>Demographics</th>
+                    <th>Base Cost</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for template in templates %}
+                <tr>
+                    <td class="fw-bold">#PRM-{{ "%03d"|format(template.id) }}</td>
+                    <td class="fw-bold text-dark">{{ template.test_name }}</td>
+                    <td>
+                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill small">{{ template.test_category }}</span>
+                    </td>
+                    <td class="fw-semibold text-muted">
+                        {{ template.normal_range_text or (template.normal_range_min|string + " - " + template.normal_range_max|string) }}
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill">{{ template.unit or 'N/A' }}</span>
+                    </td>
+                    <td>
+                        {% if template.critical_range_min is not None or template.critical_range_max is not None %}
+                            <span class="text-danger small fw-bold">
+                                {% if template.critical_range_min is not None %}&lt;= {{ template.critical_range_min }}{% endif %}
+                                {% if template.critical_range_min is not None and template.critical_range_max is not None %} or {% endif %}
+                                {% if template.critical_range_max is not None %}&gt;= {{ template.critical_range_max }}{% endif %}
+                            </span>
+                        {% else %}
+                            <span class="text-muted small">None</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">
+                        <div>Gender: {{ template.gender }}</div>
+                        <div>Age: {{ template.age_min }} - {{ template.age_max }} Yrs</div>
+                    </td>
+                    <td class="fw-bold text-primary">INR {{ template.cost }}</td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin.edit_lab_template', id=template.id) }}" class="btn btn-outline-primary btn-sm rounded-pill px-3"><i class="bi bi-pencil-square"></i> Edit</a>
+                            <form method="POST" action="{{ url_for('admin.delete_lab_template', id=template.id) }}" onsubmit="return confirm('Are you sure you want to delete this test template parameter?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">No diagnostic test templates found. Create one to begin.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

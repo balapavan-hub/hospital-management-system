@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, DecimalField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Regexp, Optional, ValidationError, NumberRange
-from app.models.user import User, Doctor, Receptionist
+from app.models.user import User, Doctor, Receptionist, LabTechnician
 from app.models.department import Department
 from app.models.room import Room
 
@@ -185,3 +185,61 @@ class RoomForm(FlaskForm):
             if self.room_id and room.id == self.room_id:
                 return
             raise ValidationError('Room number already exists.')
+
+
+class LabTechnicianForm(FlaskForm):
+    first_name = StringField('First Name', validators=[
+        DataRequired(message="First name is required"),
+        Length(min=2, max=50)
+    ])
+    last_name = StringField('Last Name', validators=[
+        DataRequired(message="Last name is required"),
+        Length(min=2, max=50)
+    ])
+    email = StringField('Email Address', validators=[
+        DataRequired(message="Email is required"),
+        Email(message="Invalid email address")
+    ])
+    phone = StringField('Phone Number', validators=[
+        DataRequired(message="Phone number is required"),
+        Regexp(r'^\+?[0-9]{10,15}$', message="Phone number must be between 10 to 15 digits")
+    ])
+    password = PasswordField('Password', validators=[
+        Optional(),
+        Length(min=6, message="Password must be at least 6 characters long")
+    ])
+    confirm_password = PasswordField('Confirm Password', validators=[
+        EqualTo('password', message="Passwords must match")
+    ])
+    employee_id = StringField('Employee ID', validators=[
+        DataRequired(message="Employee ID is required"),
+        Length(min=2, max=50)
+    ])
+    submit = SubmitField('Save Lab Technician')
+
+    def __init__(self, technician_id=None, *args, **kwargs):
+        super(LabTechnicianForm, self).__init__(*args, **kwargs)
+        self.technician_id = technician_id
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            if self.technician_id:
+                technician = LabTechnician.query.get(self.technician_id)
+                if technician and technician.user_id == user.id:
+                    return
+            raise ValidationError('Email is already registered by another user.')
+
+    def validate_phone(self, phone):
+        technician = LabTechnician.query.filter_by(phone=phone.data).first()
+        if technician:
+            if self.technician_id and technician.id == self.technician_id:
+                return
+            raise ValidationError('Phone number is already in use.')
+
+    def validate_employee_id(self, employee_id):
+        technician = LabTechnician.query.filter_by(employee_id=employee_id.data).first()
+        if technician:
+            if self.technician_id and technician.id == self.technician_id:
+                return
+            raise ValidationError('Employee ID is already assigned.')

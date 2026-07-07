@@ -237,8 +237,8 @@ def lab_tests():
         flash('Patient profile not found!', 'danger')
         return redirect(url_for('main.index'))
     
-    pending_tests = LabTest.query.filter_by(patient_id=patient.id).filter(LabTest.status != 'Completed', LabTest.status != 'Cancelled').order_by(LabTest.test_date.desc()).all()
-    completed_tests = LabTest.query.filter_by(patient_id=patient.id, status='Completed').order_by(LabTest.result_date.desc()).all()
+    pending_tests = LabTest.query.filter_by(patient_id=patient.id).filter(~LabTest.status.in_(['Completed', 'Delivered', 'Cancelled'])).order_by(LabTest.test_date.desc()).all()
+    completed_tests = LabTest.query.filter_by(patient_id=patient.id).filter(LabTest.status.in_(['Completed', 'Delivered'])).order_by(LabTest.result_date.desc()).all()
     
     return render_template('patient/lab_tests.html', pending_tests=pending_tests, completed_tests=completed_tests)
 
@@ -249,3 +249,32 @@ def view_lab_result(test_id):
         flash('Unauthorized access to this lab test.', 'danger')
         return redirect(url_for('patient.dashboard'))
     return render_template('patient/view_lab_result.html', lab_test=lab_test)
+
+@patient_bp.route('/lab-trends')
+def lab_trends():
+    patient = current_user.patient
+    if not patient:
+        flash('Patient profile not found!', 'danger')
+        return redirect(url_for('main.index'))
+        
+    completed_tests = LabTest.query.filter_by(patient_id=patient.id).filter(LabTest.status.in_(['Completed', 'Delivered'])).order_by(LabTest.result_date.asc()).all()
+    
+    # Structure data for Chart.js
+    # trends = { 'Hemoglobin': {'dates': [...], 'values': [...], 'unit': 'g/dL'} }
+    trends = {}
+    for test in completed_tests:
+        for result in test.results:
+            param_name = result.template.test_name
+            # Try to convert observed value to float for charting
+            try:
+                val = float(result.observed_value)
+                if param_name not in trends:
+                    trends[param_name] = {'dates': [], 'values': [], 'unit': result.unit_used or ''}
+                trends[param_name]['dates'].append(test.result_date.strftime('%d-%b-%Y'))
+                trends[param_name]['values'].append(val)
+            except ValueError:
+                # Skip non-numeric values for charting
+                continue
+                
+    return render_template('patient/lab_trends.html', trends=trends, completed_tests=completed_tests)
+

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Lab Orders Tracking{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-clipboard2-pulse-fill text-primary me-2"></i>Lab Orders Tracking</h2>
+        <p class="text-muted mb-0">Monitor and update diagnostic samples at every stage</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm rounded-4 p-3 mb-4 card-glass">
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('lab_technician.orders') }}" class="btn {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-4">All Orders</a>
+        <a href="{{ url_for('lab_technician.orders', status='Sample Collected') }}" class="btn {% if status_filter == 'Sample Collected' %}btn-warning{% else %}btn-outline-secondary{% endif %} rounded-pill px-4">Sample Collected</a>
+        <a href="{{ url_for('lab_technician.orders', status='Sample Received') }}" class="btn {% if status_filter == 'Sample Received' %}btn-info{% else %}btn-outline-secondary{% endif %} rounded-pill px-4">Sample Received</a>
+        <a href="{{ url_for('lab_technician.orders', status='Under Processing') }}" class="btn {% if status_filter == 'Under Processing' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-4">Under Processing</a>
+        <a href="{{ url_for('lab_technician.orders', status='Quality Check') }}" class="btn {% if status_filter == 'Quality Check' %}btn-secondary{% else %}btn-outline-secondary{% endif %} rounded-pill px-4">Quality Check</a>
+        <a href="{{ url_for('lab_technician.orders', status='Completed') }}" class="btn {% if status_filter == 'Completed' %}btn-success{% else %}btn-outline-secondary{% endif %} rounded-pill px-4">Completed</a>
+        <a href="{{ url_for('lab_technician.orders', status='Delivered') }}" class="btn {% if status_filter == 'Delivered' %}btn-success{% else %}btn-outline-secondary{% endif %} rounded-pill px-4">Delivered</a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 card-glass">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted small">
+                <tr>
+                    <th>Sample ID</th>
+                    <th>Patient</th>
+                    <th>Ordered By</th>
+                    <th>Test / Package</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="fw-bold text-primary">{{ order.sample_id }}</td>
+                    <td>
+                        <div class="fw-bold">{{ order.patient.full_name }}</div>
+                        <div class="small text-muted">{{ order.patient.gender }}, {{ order.patient.age }} Yrs</div>
+                    </td>
+                    <td>{{ order.doctor.full_name if order.doctor else 'Self-Ordered' }}</td>
+                    <td>
+                        <div class="fw-bold">{{ order.test_name }}</div>
+                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill small">{{ order.test_category }}</span>
+                    </td>
+                    <td>{{ order.test_date.strftime('%d-%b-%Y %H:%M') }}</td>
+                    <td>
+                        <span class="badge rounded-pill 
+                            {% if order.status == 'Sample Collected' %}bg-warning-subtle text-warning-emphasis
+                            {% elif order.status == 'Sample Received' %}bg-info-subtle text-info-emphasis
+                            {% elif order.status == 'Under Processing' %}bg-primary-subtle text-primary-emphasis
+                            {% elif order.status == 'Quality Check' %}bg-secondary-subtle text-secondary-emphasis
+                            {% elif order.status == 'Completed' %}bg-success-subtle text-success-emphasis
+                            {% elif order.status == 'Delivered' %}bg-success
+                            {% else %}bg-light text-muted
+                            {% endif %} px-2.5 py-1.5">
+                            {{ order.status }}
+                        </span>
+                        {% if order.is_critical %}
+                            <span class="badge bg-danger rounded-pill px-2.5 py-1.5"><i class="bi bi-exclamation-octagon-fill me-1"></i>CRITICAL</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            {% if order.status != 'Completed' and order.status != 'Delivered' %}
+                                <form method="POST" action="{{ url_for('lab_technician.process_sample', test_id=order.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                        {% if order.status == 'Sample Collected' %}Receive Sample
+                                        {% elif order.status == 'Sample Received' %}Start Process
+                                        {% elif order.status == 'Under Processing' %}Send to QC
+                                        {% elif order.status == 'Quality Check' %}QC Verify & Complete
+                                        {% endif %}
+                                    </button>
+                                </form>
+                                {% if order.status == 'Quality Check' or order.status == 'Under Processing' %}
+                                    <a href="{{ url_for('lab_technician.record_results', test_id=order.id) }}" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-pencil-square me-1"></i>Enter Results</a>
+                                {% endif %}
+                            {% else %}
+                                <a href="{{ url_for('doctor.view_lab_result', test_id=order.id) }}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-eye"></i> View Results</a>
+                                {% if order.status == 'Completed' %}
+                                    <form method="POST" action="{{ url_for('lab_technician.process_sample', test_id=order.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-success btn-sm rounded-pill px-3">Mark Delivered</button>
+                                    </form>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No laboratory orders match this filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

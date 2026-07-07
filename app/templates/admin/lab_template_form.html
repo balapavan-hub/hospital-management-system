@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin.lab_templates') }}" class="btn btn-link p-0 text-decoration-none text-muted"><i class="bi bi-arrow-left me-2"></i>Back to Parameters</a>
+</div>
+
+<div class="row justify-content-center animate__animated animate__fadeInUp">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 card-glass">
+            <div class="d-flex align-items-center mb-4">
+                <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                    <i class="bi bi-activity text-primary fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-1">{{ title }}</h4>
+                    <p class="text-muted mb-0">Define normal parameters and critical alert values for lab tests</p>
+                </div>
+            </div>
+
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">Basic Info & Cost</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-5">
+                        <label for="{{ form.test_name.id }}" class="form-label small fw-semibold">Parameter Name <span class="text-danger">*</span></label>
+                        {{ form.test_name(class="form-control rounded-pill px-3", placeholder="e.g. Hemoglobin (Hb)") }}
+                        {% for error in form.test_name.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.test_category.id }}" class="form-label small fw-semibold">Category <span class="text-danger">*</span></label>
+                        {{ form.test_category(class="form-select rounded-pill px-3") }}
+                        {% for error in form.test_category.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.cost.id }}" class="form-label small fw-semibold">Base Cost (INR) <span class="text-danger">*</span></label>
+                        {{ form.cost(class="form-control rounded-pill px-3") }}
+                        {% for error in form.cost.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">Reference Values & Unit</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="{{ form.normal_range_min.id }}" class="form-label small fw-semibold">Normal Range Min (Numeric)</label>
+                        {{ form.normal_range_min(class="form-control rounded-pill px-3", placeholder="e.g. 12.0") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.normal_range_max.id }}" class="form-label small fw-semibold">Normal Range Max (Numeric)</label>
+                        {{ form.normal_range_max(class="form-control rounded-pill px-3", placeholder="e.g. 16.0") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.unit.id }}" class="form-label small fw-semibold">Unit of Measure</label>
+                        {{ form.unit(class="form-control rounded-pill px-3", placeholder="e.g. g/dL, mg/dL") }}
+                    </div>
+                    <div class="col-12">
+                        <label for="{{ form.normal_range_text.id }}" class="form-label small fw-semibold">Normal Range Text representation</label>
+                        {{ form.normal_range_text(class="form-control rounded-pill px-3", placeholder="e.g. 12.0 - 16.0 or 'Negative'") }}
+                        <div class="form-text text-muted">Use this if the range is text-based or to display custom range labels.</div>
+                    </div>
+                </div>
+
+                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">Demographic Filters</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="{{ form.age_min.id }}" class="form-label small fw-semibold">Min Applicable Age (Yrs)</label>
+                        {{ form.age_min(class="form-control rounded-pill px-3") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.age_max.id }}" class="form-label small fw-semibold">Max Applicable Age (Yrs)</label>
+                        {{ form.age_max(class="form-control rounded-pill px-3") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.gender.id }}" class="form-label small fw-semibold">Applicable Gender</label>
+                        {{ form.gender(class="form-select rounded-pill px-3") }}
+                    </div>
+                </div>
+
+                <h6 class="text-danger fw-bold mb-3 border-bottom pb-2">Critical Alerts Limits</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="{{ form.critical_range_min.id }}" class="form-label small fw-semibold text-danger">Lower Critical Limit (Numeric)</label>
+                        {{ form.critical_range_min(class="form-control rounded-pill px-3", placeholder="Under this triggers critical alert") }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.critical_range_max.id }}" class="form-label small fw-semibold text-danger">Upper Critical Limit (Numeric)</label>
+                        {{ form.critical_range_max(class="form-control rounded-pill px-3", placeholder="Over this triggers critical alert") }}
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    {{ form.submit(class="btn btn-primary rounded-pill px-4 py-2.5 shadow-sm") }}
+                    <a href="{{ url_for('admin.lab_templates') }}" class="btn btn-outline-secondary rounded-pill px-4 py-2.5">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

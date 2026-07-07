@@ -9,7 +9,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum('Admin', 'Doctor', 'Receptionist', 'Patient', name='user_roles'), nullable=False)
+    role = db.Column(db.Enum('Admin', 'Doctor', 'Receptionist', 'Patient', 'LabTechnician', name='user_roles'), nullable=False)
     profile_photo = db.Column(db.String(255), default='default_profile.png')
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -19,6 +19,7 @@ class User(db.Model, UserMixin):
     patient = db.relationship('Patient', backref='user', uselist=False, cascade="all, delete-orphan")
     doctor = db.relationship('Doctor', backref='user', uselist=False, cascade="all, delete-orphan")
     receptionist = db.relationship('Receptionist', backref='user', uselist=False, cascade="all, delete-orphan")
+    lab_technician = db.relationship('LabTechnician', backref='user', uselist=False, cascade="all, delete-orphan")
     notifications = db.relationship('Notification', backref='user', cascade="all, delete-orphan")
     audit_logs = db.relationship('AuditLog', backref='user', cascade="all, delete-orphan")
 
@@ -36,6 +37,8 @@ class User(db.Model, UserMixin):
             return f"Dr. {self.doctor.first_name} {self.doctor.last_name}"
         elif self.role == 'Receptionist' and self.receptionist:
             return f"{self.receptionist.first_name} {self.receptionist.last_name}"
+        elif self.role == 'LabTechnician' and self.lab_technician:
+            return f"{self.lab_technician.first_name} {self.lab_technician.last_name}"
         return "Administrator"
 
     def __repr__(self):
@@ -125,3 +128,26 @@ class Receptionist(db.Model):
 
     def __repr__(self):
         return f"<Receptionist {self.full_name}>"
+
+
+class LabTechnician(db.Model):
+    __tablename__ = 'lab_technicians'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), unique=True, nullable=False)
+    employee_id = db.Column(db.String(50), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    lab_tests = db.relationship('LabTest', backref='lab_technician')
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def __repr__(self):
+        return f"<LabTechnician {self.full_name}>"
+

@@ -3,38 +3,48 @@
 {% block title %}Search Results - MediCare{% endblock %}
 
 {% block content %}
-<div class="card border-0 shadow-sm rounded-4 p-4">
-    <h3 class="fw-bold mb-1">Search Results</h3>
+<div class="card border-0 shadow-sm rounded-4 p-4 card-glass animate__animated animate__fadeIn">
+    <h3 class="fw-bold mb-1">Global Search Results</h3>
     <p class="text-muted mb-4">Showing results for query: <strong class="text-primary">"{{ query }}"</strong></p>
 
     <!-- Nav tabs -->
     <ul class="nav nav-pills mb-4 gap-2" id="searchTab" role="tablist">
-        <li class="nav-item animate-fade" role="presentation">
-            <button class="nav-link active rounded-pill px-4" id="patients-tab" data-bs-toggle="tab" data-bs-target="#patients" type="button" role="tab" aria-controls="patients" aria-selected="true">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-4" id="patients-tab" data-bs-toggle="tab" data-bs-target="#patients" type="button" role="tab">
                 Patients ({{ results.patients | length }})
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link rounded-pill px-4" id="doctors-tab" data-bs-toggle="tab" data-bs-target="#doctors" type="button" role="tab" aria-controls="doctors" aria-selected="false">
+            <button class="nav-link rounded-pill px-4" id="doctors-tab" data-bs-toggle="tab" data-bs-target="#doctors" type="button" role="tab">
                 Doctors ({{ results.doctors | length }})
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link rounded-pill px-4" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab" aria-controls="appointments" aria-selected="false">
+            <button class="nav-link rounded-pill px-4" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab">
                 Appointments ({{ results.appointments | length }})
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link rounded-pill px-4" id="bills-tab" data-bs-toggle="tab" data-bs-target="#bills" type="button" role="tab" aria-controls="bills" aria-selected="false">
-                Bills ({{ results.bills | length }})
+            <button class="nav-link rounded-pill px-4" id="prescriptions-tab" data-bs-toggle="tab" data-bs-target="#prescriptions" type="button" role="tab">
+                Prescriptions ({{ results.prescriptions | length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4" id="lab-tests-tab" data-bs-toggle="tab" data-bs-target="#lab-tests" type="button" role="tab">
+                Lab Tests ({{ results.lab_tests | length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4" id="bills-tab" data-bs-toggle="tab" data-bs-target="#bills" type="button" role="tab">
+                Bills & Invoices ({{ results.bills | length }})
             </button>
         </li>
     </ul>
 
     <!-- Tab panes -->
-    <div class="tab-content" id="searchTabContent">
+    <div class="tab-content animate__animated animate__fadeInUp" id="searchTabContent">
         <!-- Patients Results -->
-        <div class="tab-pane fade show active" id="patients" role="tabpanel" aria-labelledby="patients-tab">
+        <div class="tab-pane fade show active" id="patients" role="tabpanel">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
@@ -66,7 +76,7 @@
         </div>
 
         <!-- Doctors Results -->
-        <div class="tab-pane fade" id="doctors" role="tabpanel" aria-labelledby="doctors-tab">
+        <div class="tab-pane fade" id="doctors" role="tabpanel">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
@@ -98,7 +108,7 @@
         </div>
 
         <!-- Appointments Results -->
-        <div class="tab-pane fade" id="appointments" role="tabpanel" aria-labelledby="appointments-tab">
+        <div class="tab-pane fade" id="appointments" role="tabpanel">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
@@ -117,7 +127,7 @@
                             <td>{{ appt.patient.full_name }}</td>
                             <td>{{ appt.doctor.full_name }}</td>
                             <td>{{ appt.appointment_date }} @ {{ appt.time_slot }}</td>
-                            <td><span class="badge bg-secondary">{{ appt.status }}</span></td>
+                            <td><span class="badge bg-secondary rounded-pill">{{ appt.status }}</span></td>
                         </tr>
                         {% else %}
                         <tr>
@@ -129,8 +139,78 @@
             </div>
         </div>
 
+        <!-- Prescriptions Results -->
+        <div class="tab-pane fade" id="prescriptions" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-3">Date</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Diagnosis</th>
+                            <th>Symptoms</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pres in results.prescriptions %}
+                        <tr>
+                            <td class="px-3 fw-bold">{{ pres.created_at.strftime('%d-%b-%Y') }}</td>
+                            <td>{{ pres.patient.full_name }}</td>
+                            <td>{{ pres.doctor.full_name }}</td>
+                            <td class="fw-semibold">{{ pres.diagnosis }}</td>
+                            <td class="text-muted small">{{ pres.symptoms }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No matching prescriptions found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Lab Tests Results -->
+        <div class="tab-pane fade" id="lab-tests" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="px-3">Sample ID</th>
+                            <th>Patient</th>
+                            <th>Ordered By</th>
+                            <th>Test / Package Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in results.lab_tests %}
+                        <tr>
+                            <td class="px-3 fw-bold text-primary">{{ test.sample_id }}</td>
+                            <td>{{ test.patient.full_name }}</td>
+                            <td>{{ test.doctor.full_name if test.doctor else 'Self-Ordered' }}</td>
+                            <td class="fw-semibold text-dark">{{ test.test_name }}</td>
+                            <td>
+                                <span class="badge rounded-pill
+                                    {% if test.status == 'Completed' %}bg-success
+                                    {% elif test.status == 'Delivered' %}bg-primary
+                                    {% else %}bg-warning text-dark
+                                    {% endif %}">{{ test.status }}</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No matching laboratory tests or reports found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Bills Results -->
-        <div class="tab-pane fade" id="bills" role="tabpanel" aria-labelledby="bills-tab">
+        <div class="tab-pane fade" id="bills" role="tabpanel">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
@@ -139,7 +219,6 @@
                             <th>Patient</th>
                             <th>Grand Total</th>
                             <th>Status</th>
-                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -148,14 +227,11 @@
                             <td class="px-3">#MC-{{ "%06d"|format(bill.id) }}</td>
                             <td>{{ bill.patient.full_name }}</td>
                             <td>INR {{ bill.grand_total }}</td>
-                            <td><span class="badge {% if bill.status == 'Paid' %}bg-success{% else %}bg-warning{% endif %}">{{ bill.status }}</span></td>
-                            <td class="text-end">
-                                <a href="{{ url_for('receptionist.view_bill', id=bill.id) }}" class="btn btn-primary btn-sm rounded-pill px-3">View Bill</a>
-                            </td>
+                            <td><span class="badge {% if bill.status == 'Paid' %}bg-success{% else %}bg-warning{% endif %} rounded-pill">{{ bill.status }}</span></td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No matching invoices found.</td>
+                            <td colspan="4" class="text-center text-muted py-4">No matching invoices found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

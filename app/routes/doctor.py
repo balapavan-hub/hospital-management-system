@@ -11,7 +11,7 @@ from app.models.prescription import Prescription, PrescriptionMedicine
 from app.models.medical_report import MedicalReport
 from app.models.billing import Bill
 from app.models.lab_test import LabTest
-from app.forms import PrescriptionForm, MedicalReportForm, OrderLabTestForm, UpdateLabResultForm
+from app.forms import PrescriptionForm, MedicalReportForm, DoctorOrderLabForm
 from app.services import AuditService, NotificationService, ReportService
 
 doctor_bp = Blueprint('doctor', __name__)
@@ -232,89 +232,105 @@ def view_bills():
 @doctor_bp.route('/lab-tests')
 def lab_tests():
     doctor = current_user.doctor
-    pending_tests = LabTest.query.filter_by(doctor_id=doctor.id).filter(LabTest.status != 'Completed', LabTest.status != 'Cancelled').order_by(LabTest.test_date.desc()).all()
-    completed_tests = LabTest.query.filter_by(doctor_id=doctor.id, status='Completed').order_by(LabTest.result_date.desc()).all()
+    pending_tests = LabTest.query.filter_by(doctor_id=doctor.id).filter(~LabTest.status.in_(['Completed', 'Delivered', 'Cancelled'])).order_by(LabTest.test_date.desc()).all()
+    completed_tests = LabTest.query.filter_by(doctor_id=doctor.id).filter(LabTest.status.in_(['Completed', 'Delivered'])).order_by(LabTest.result_date.desc()).all()
     return render_template('doctor/lab_tests.html', pending_tests=pending_tests, completed_tests=completed_tests)
 
 @doctor_bp.route('/order-lab-test/<int:patient_id>', methods=['GET', 'POST'])
+@login_required
 def order_lab_test(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     doctor = current_user.doctor
-    form = OrderLabTestForm()
+    form = DoctorOrderLabForm()
+    
+    # Load parameters and packages
+    templates = LabTestTemplate.query.order_by(LabTestTemplate.test_name).all()
+    packages = LabPackage.query.filter_by(is_active=True).order_by(LabPackage.name).all()
+    
+    form.single_template_id.choices = [(0, '--- Select Single Parameter ---')] + [(t.id, f"{t.test_name} (INR {t.cost})") for t in templates]
+    form.package_id.choices = [(0, '--- Select Health Package ---')] + [(p.id, f"{p.name} (INR {p.cost})") for p in packages]
     
     if form.validate_on_submit():
+        today_str = datetime.now().strftime('%Y%m%d')
+        count_today = LabTest.query.filter(LabTest.sample_id.like(f"SAM-{today_str}-%")).count()
+        sample_id = f"SAM-{today_str}-{(count_today + 1):04d}"
+        
+        test_name = ""
+        test_category = ""
+        single_template_id = None
+        package_id = None
+        
+        if form.order_type.data == 'single':
+            template = LabTestTemplate.query.get(form.single_template_id.data)
+            if not template or form.single_template_id.data == 0:
+                flash('Please select a valid test parameter.', 'danger')
+                return render_template('doctor/order_lab_test.html', form=form, patient=patient)
+            test_name = template.test_name
+            test_category = template.test_category
+            single_template_id = template.id
+            cost = template.cost
+        else:
+            pkg = LabPackage.query.get(form.package_id.data)
+            if not pkg or form.package_id.data == 0:
+                flash('Please select a valid test package.', 'danger')
+                return render_template('doctor/order_lab_test.html', form=form, patient=patient)
+            test_name = pkg.name
+            test_category = "Health Package"
+            package_id = pkg.id
+            cost = pkg.cost
+            
         lab_test = LabTest(
+            sample_id=sample_id,
             patient_id=patient.id,
             doctor_id=doctor.id,
-            test_name=form.test_name.data,
-            test_category=form.test_category.data,
+            package_id=package_id,
+            single_template_id=single_template_id,
+            test_name=test_name,
+            test_category=test_category,
             description=form.description.data,
-            cost=form.cost.data,
-            status='Ordered'
+            cost=form.cost.data or cost,
+            status='Sample Collected'
         )
         db.session.add(lab_test)
         db.session.commit()
         
-        AuditService.log_action(current_user.id, f"Ordered Lab Test '{lab_test.test_name}' for Patient '{patient.full_name}'")
+        AuditService.log_action(current_user.id, f"Ordered Lab Test/Package '{lab_test.test_name}' for Patient '{patient.full_name}'")
+        
         NotificationService.create_notification(
             patient.user_id,
-            "Lab Test Ordered",
-            f"Dr. {doctor.last_name} has ordered a {lab_test.test_name} test for you. Please visit the lab for sample collection."
+            "New Lab Test Ordered",
+            f"Dr. {doctor.last_name} has ordered '{lab_test.test_name}' (Sample ID: {lab_test.sample_id})."
+        )
+        CommunicationService.send_mock_email(
+            patient.user.email,
+            "Lab Test Assigned",
+            f"Hello {patient.full_name}, Dr. {doctor.full_name} has assigned you the lab test '{lab_test.test_name}'. Please visit the laboratory for sample collection."
         )
         
-        flash(f"Lab test '{lab_test.test_name}' ordered successfully!", 'success')
+        # Create corresponding bill for lab test
+        # We can integrate this into receptionist billing or log a bill immediately!
+        # Let's create a pending bill for this patient for lab test
+        from app.services.billing_service import BillingService
+        BillingService.generate_bill(
+            appointment_id=0,
+            patient_id=patient.id,
+            consultation_fee=0,
+            medicine_charges=0,
+            lab_charges=lab_test.cost,
+            other_charges=0,
+            discount=0,
+            status='Pending'
+        )
+        CommunicationService.send_mock_email(
+            patient.user.email,
+            "Lab Test Bill Generated",
+            f"Hello {patient.full_name}, a lab billing invoice has been generated for your ordered test '{lab_test.test_name}'. Amount: INR {lab_test.cost}."
+        )
+
+        flash(f"Laboratory order '{lab_test.test_name}' placed successfully! Sample ID: {sample_id}", 'success')
         return redirect(url_for('doctor.patient_details', patient_id=patient.id))
         
     return render_template('doctor/order_lab_test.html', form=form, patient=patient)
-
-@doctor_bp.route('/update-lab-result/<int:test_id>', methods=['GET', 'POST'])
-def update_lab_result(test_id):
-    lab_test = LabTest.query.get_or_404(test_id)
-    doctor = current_user.doctor
-    
-    if lab_test.doctor_id != doctor.id:
-        flash('Unauthorized access to this lab test.', 'danger')
-        return redirect(url_for('doctor.lab_tests'))
-    
-    form = UpdateLabResultForm()
-    
-    if form.validate_on_submit():
-        lab_test.result_value = form.result_value.data
-        lab_test.normal_range = form.normal_range.data
-        lab_test.unit = form.unit.data
-        lab_test.result_status = form.result_status.data
-        lab_test.remarks = form.remarks.data
-        lab_test.status = 'Completed'
-        lab_test.result_date = datetime.now()
-        
-        # Handle file upload
-        if form.report_file.data:
-            file = form.report_file.data
-            filename = secure_filename(f"labtest_{lab_test.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
-            filepath = os.path.join(current_app.config['REPORTS_FOLDER'], filename)
-            file.save(filepath)
-            lab_test.report_file = filename
-        
-        db.session.commit()
-        
-        AuditService.log_action(current_user.id, f"Updated Lab Result for Test #{lab_test.id} ({lab_test.test_name})")
-        NotificationService.create_notification(
-            lab_test.patient.user_id,
-            "Lab Test Result Available",
-            f"Results for your {lab_test.test_name} test are now available. Status: {lab_test.result_status}."
-        )
-        
-        flash(f"Lab test results for '{lab_test.test_name}' saved successfully!", 'success')
-        return redirect(url_for('doctor.view_lab_result', test_id=lab_test.id))
-    
-    elif request.method == 'GET' and lab_test.result_value:
-        form.result_value.data = lab_test.result_value
-        form.normal_range.data = lab_test.normal_range
-        form.unit.data = lab_test.unit
-        form.result_status.data = lab_test.result_status
-        form.remarks.data = lab_test.remarks
-    
-    return render_template('doctor/update_lab_result.html', form=form, lab_test=lab_test)
 
 @doctor_bp.route('/view-lab-result/<int:test_id>')
 def view_lab_result(test_id):
@@ -333,3 +349,25 @@ def download_lab_report(test_id):
     else:
         flash('File not found on server.', 'danger')
         return redirect(request.referrer or url_for('doctor.lab_tests'))
+
+@doctor_bp.route('/patient-trends/<int:patient_id>')
+def patient_trends(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    completed_tests = LabTest.query.filter_by(patient_id=patient.id).filter(LabTest.status.in_(['Completed', 'Delivered'])).order_by(LabTest.result_date.asc()).all()
+    
+    # Structure data for Chart.js
+    trends = {}
+    for test in completed_tests:
+        for result in test.results:
+            param_name = result.template.test_name
+            try:
+                val = float(result.observed_value)
+                if param_name not in trends:
+                    trends[param_name] = {'dates': [], 'values': [], 'unit': result.unit_used or ''}
+                trends[param_name]['dates'].append(test.result_date.strftime('%d-%b-%Y'))
+                trends[param_name]['values'].append(val)
+            except ValueError:
+                continue
+                
+    return render_template('doctor/patient_trends.html', patient=patient, trends=trends, completed_tests=completed_tests)
+

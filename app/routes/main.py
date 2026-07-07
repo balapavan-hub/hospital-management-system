@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, session, flash
+from flask import Blueprint, render_template, redirect, url_for, request, session, flash, jsonify
 from app.models.department import Department
 from app.models.user import Doctor
 
@@ -47,3 +47,28 @@ def contact():
     # For now, just flash a success message.
     flash("Thank you for reaching out! We have received your query and will contact you shortly.", "success")
     return redirect(url_for('main.index'))
+
+@main_bp.route('/verify-report/<int:test_id>')
+def verify_report(test_id):
+    from app.models.lab_test import LabTest
+    lab_test = LabTest.query.get_or_404(test_id)
+    
+    if request.args.get('json') == '1':
+        results_data = []
+        for r in lab_test.results:
+            results_data.append({
+                'param_name': r.template.test_name,
+                'value': r.observed_value,
+                'status': r.result_status,
+                'range': r.normal_range_used,
+                'unit': r.unit_used
+            })
+        return jsonify({
+            'test_name': lab_test.test_name,
+            'result_date': lab_test.result_date.strftime('%d-%b-%Y %H:%M') if lab_test.result_date else 'N/A',
+            'is_critical': lab_test.is_critical,
+            'results': results_data
+        })
+        
+    return render_template('verify_report.html', lab_test=lab_test)
+

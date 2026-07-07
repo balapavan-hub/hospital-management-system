@@ -245,20 +245,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
 
-                // Chart 2: Revenue Chart
+                // Chart 2: Revenue Chart (Stacked breakdown)
                 if (revCtx) {
                     new Chart(revCtx, {
                         type: 'bar',
                         data: {
                             labels: data.months,
-                            datasets: [{
-                                label: 'Monthly Revenue (INR)',
-                                data: data.revenue,
-                                backgroundColor: '#10b981',
-                                borderRadius: 6
-                            }]
+                            datasets: [
+                                {
+                                    label: 'Consultation Fees',
+                                    data: data.consultation_revenue,
+                                    backgroundColor: '#0d6efd',
+                                },
+                                {
+                                    label: 'Pharmacy Revenue',
+                                    data: data.pharmacy_revenue,
+                                    backgroundColor: '#f59e0b',
+                                },
+                                {
+                                    label: 'Laboratory Revenue',
+                                    data: data.lab_revenue,
+                                    backgroundColor: '#10b981',
+                                }
+                            ]
                         },
-                        options: commonOptions
+                        options: {
+                            ...commonOptions,
+                            scales: {
+                                x: { ...commonOptions.scales.x, stacked: true },
+                                y: { ...commonOptions.scales.y, stacked: true }
+                            }
+                        }
                     });
                 }
 

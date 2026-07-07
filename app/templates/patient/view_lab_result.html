@@ -3,70 +3,117 @@
 {% block title %}Lab Result - {{ lab_test.test_name }}{% endblock %}
 
 {% block content %}
-<div class="mb-4">
+<div class="mb-4 animate__animated animate__fadeIn">
     <a href="{{ url_for('patient.lab_tests') }}" class="btn btn-link p-0 text-decoration-none text-muted"><i class="bi bi-arrow-left me-2"></i>Back to My Lab Tests</a>
 </div>
 
 <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm rounded-4 p-4">
-            <div class="d-flex align-items-center justify-content-between mb-4">
+    <div class="col-lg-10">
+        <div class="card border-0 shadow-sm rounded-4 p-4 card-glass animate__animated animate__fadeInUp">
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
                 <div class="d-flex align-items-center">
                     <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
                         <i class="bi bi-clipboard2-check-fill text-primary fs-4"></i>
                     </div>
                     <div>
                         <h4 class="fw-bold mb-1">{{ lab_test.test_name }}</h4>
-                        <p class="text-muted mb-0">Test ID: #LT-{{ "%05d"|format(lab_test.id) }} | Category: {{ lab_test.test_category }}</p>
+                        <p class="text-muted mb-0">Test ID: <strong>{{ lab_test.sample_id }}</strong> | Category: {{ lab_test.test_category }}</p>
                     </div>
                 </div>
-                <span class="badge fs-6 
-                    {% if lab_test.result_status == 'Normal' %}bg-success
-                    {% elif lab_test.result_status == 'Abnormal' %}bg-warning
-                    {% elif lab_test.result_status == 'Critical' %}bg-danger
-                    {% else %}bg-secondary
-                    {% endif %} rounded-pill px-3 py-2">{{ lab_test.result_status or lab_test.status }}</span>
+                <div class="d-flex gap-2">
+                    {% if lab_test.is_critical %}
+                        <span class="badge bg-danger fs-6 rounded-pill px-3 py-2 animate__animated animate__flash animate__infinite"><i class="bi bi-exclamation-octagon-fill me-1"></i>CRITICAL VALUES</span>
+                    {% endif %}
+                    <span class="badge fs-6 
+                        {% if lab_test.status == 'Completed' %}bg-success
+                        {% elif lab_test.status == 'Delivered' %}bg-primary
+                        {% else %}bg-warning text-dark
+                        {% endif %} rounded-pill px-3 py-2">{{ lab_test.status }}</span>
+                </div>
             </div>
 
-            <!-- Test Info -->
-            <div class="bg-light rounded-4 p-3 mb-4">
-                <div class="row small">
-                    <div class="col-md-6 mb-2"><strong>Ordered By:</strong> <span class="text-muted">{{ lab_test.doctor.full_name if lab_test.doctor else 'N/A' }}</span></div>
-                    <div class="col-md-6 mb-2"><strong>Ordered Date:</strong> <span class="text-muted">{{ lab_test.test_date.strftime('%d-%b-%Y %I:%M %p') }}</span></div>
-                    <div class="col-md-6 mb-2"><strong>Result Date:</strong> <span class="text-muted">{{ lab_test.result_date.strftime('%d-%b-%Y %I:%M %p') if lab_test.result_date else 'Pending' }}</span></div>
-                    <div class="col-md-6 mb-2"><strong>Test Cost:</strong> <span class="text-muted">INR {{ lab_test.cost }}</span></div>
-                    {% if lab_test.description %}
-                    <div class="col-12"><strong>Instructions:</strong> <span class="text-muted">{{ lab_test.description }}</span></div>
-                    {% endif %}
+            <!-- Patient & Test Info -->
+            <div class="bg-light bg-opacity-50 rounded-4 p-3 mb-4">
+                <div class="row small g-3">
+                    <div class="col-md-4"><strong>Patient:</strong> <span class="text-muted">{{ lab_test.patient.full_name }}</span></div>
+                    <div class="col-md-4"><strong>Age / Gender:</strong> <span class="text-muted">{{ lab_test.patient.age }} Yrs / {{ lab_test.patient.gender }}</span></div>
+                    <div class="col-md-4"><strong>Ordered By:</strong> <span class="text-muted">{{ lab_test.doctor.full_name if lab_test.doctor else 'Self-Ordered' }}</span></div>
+                    <div class="col-md-4"><strong>Lab Technician:</strong> <span class="text-muted">{{ lab_test.lab_technician.full_name if lab_test.lab_technician else 'N/A' }}</span></div>
+                    <div class="col-md-4"><strong>Ordered Date:</strong> <span class="text-muted">{{ lab_test.test_date.strftime('%d-%b-%Y %H:%M') }}</span></div>
+                    <div class="col-md-4"><strong>Result Date:</strong> <span class="text-muted">{{ lab_test.result_date.strftime('%d-%b-%Y %H:%M') if lab_test.result_date else 'Pending' }}</span></div>
                 </div>
             </div>
 
             <!-- Results Section -->
-            {% if lab_test.status == 'Completed' %}
-            <h5 class="fw-bold mb-3"><i class="bi bi-journal-medical me-2 text-success"></i>Test Results</h5>
-            <div class="border rounded-4 p-3 mb-3">
-                <div class="row">
-                    <div class="col-12 mb-3">
-                        <strong>Result / Findings:</strong>
-                        <p class="text-dark mt-1 mb-0 bg-light p-2 rounded-3">{{ lab_test.result_value }}</p>
-                    </div>
-                    {% if lab_test.normal_range %}
-                    <div class="col-md-6 mb-2">
-                        <strong>Normal Range:</strong> <span class="text-muted">{{ lab_test.normal_range }} {{ lab_test.unit or '' }}</span>
-                    </div>
-                    {% endif %}
-                    {% if lab_test.remarks %}
-                    <div class="col-12">
-                        <strong>Doctor's Remarks:</strong>
-                        <p class="text-muted mt-1 mb-0">{{ lab_test.remarks }}</p>
-                    </div>
-                    {% endif %}
-                </div>
+            {% if lab_test.status in ['Completed', 'Delivered'] %}
+            <h5 class="fw-bold mb-3"><i class="bi bi-journal-medical me-2 text-success"></i>Observed Values</h5>
+            
+            <div class="table-responsive mb-4">
+                <table class="table align-middle">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th>Test Parameter</th>
+                            <th>Reference Range</th>
+                            <th>Unit</th>
+                            <th>Observed Value</th>
+                            <th>Evaluation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in lab_test.results %}
+                        <tr>
+                            <td class="fw-bold text-dark">{{ r.template.test_name }}</td>
+                            <td class="text-muted">{{ r.normal_range_used }}</td>
+                            <td><span class="badge bg-light text-dark rounded-pill">{{ r.unit_used or 'N/A' }}</span></td>
+                            <td class="fw-bold fs-5">{{ r.observed_value }}</td>
+                            <td>
+                                {% if r.result_status == 'Normal' %}
+                                    <span class="badge bg-success rounded-pill px-3 py-1.5"><i class="bi bi-check-circle-fill me-1"></i>Normal</span>
+                                {% elif r.result_status == 'Low' %}
+                                    <span class="badge bg-warning text-dark rounded-pill px-3 py-1.5"><i class="bi bi-arrow-down-circle-fill me-1"></i>Low</span>
+                                {% elif r.result_status == 'High' %}
+                                    <span class="badge bg-danger rounded-pill px-3 py-1.5"><i class="bi bi-arrow-up-circle-fill me-1"></i>High</span>
+                                {% elif r.result_status == 'Critical' %}
+                                    <span class="badge text-white rounded-pill px-3 py-1.5 animate__animated animate__pulse animate__infinite" style="background-color: #8b0000;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Critical</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+
+            <div class="row g-3 mb-4">
+                {% if lab_test.interpretation %}
+                <div class="col-md-6">
+                    <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-20">
+                        <strong class="text-dark d-block mb-2">Interpretation:</strong>
+                        <p class="text-muted mb-0 small" style="white-space: pre-wrap;">{{ lab_test.interpretation }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% if lab_test.remarks %}
+                <div class="col-md-6">
+                    <div class="border rounded-4 p-3 h-100 bg-light bg-opacity-20">
+                        <strong class="text-dark d-block mb-2">Remarks:</strong>
+                        <p class="text-muted mb-0 small" style="white-space: pre-wrap;">{{ lab_test.remarks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="d-flex flex-wrap gap-2">
+                {% if lab_test.report_file %}
+                    <a href="{{ url_for('doctor.download_lab_report', test_id=lab_test.id) }}" class="btn btn-outline-primary rounded-pill px-4"><i class="bi bi-download me-2"></i>Download PDF Report</a>
+                {% endif %}
+                <a href="{{ url_for('main.index') }}verify-report/{{ lab_test.id }}" target="_blank" class="btn btn-outline-secondary rounded-pill px-4"><i class="bi bi-qr-code me-2"></i>Verify Report</a>
+            </div>
+            
             {% else %}
-            <div class="text-center text-muted py-4">
-                <i class="bi bi-hourglass-split fs-1 mb-2 d-block"></i>
-                <p class="mb-0">Results are not yet available for this test. Please check back later.</p>
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-hourglass-split fs-1 mb-3 d-block text-warning animate__animated animate__pulse animate__infinite"></i>
+                <p class="mb-0">Your lab sample is currently <strong>{{ lab_test.status }}</strong>.</p>
+                <p class="small text-muted">Results will be available as soon as processing is completed. We will notify you by email/SMS.</p>
             </div>
             {% endif %}
         </div>

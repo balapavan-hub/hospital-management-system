@@ -146,6 +146,8 @@ def profile():
             profile_form.address.data = current_user.doctor.bio # Map bio to address for editing simplicity
         elif current_user.role == 'Receptionist' and current_user.receptionist:
             profile_form.phone.data = current_user.receptionist.phone
+        elif current_user.role == 'LabTechnician' and current_user.lab_technician:
+            profile_form.phone.data = current_user.lab_technician.phone
 
     # Handle Forms submission
     action = request.form.get('action')
@@ -170,6 +172,8 @@ def profile():
             current_user.doctor.bio = profile_form.address.data
         elif current_user.role == 'Receptionist' and current_user.receptionist:
             current_user.receptionist.phone = profile_form.phone.data
+        elif current_user.role == 'LabTechnician' and current_user.lab_technician:
+            current_user.lab_technician.phone = profile_form.phone.data
             
         db.session.commit()
         AuditService.log_action(current_user.id, "Profile Updated", request.remote_addr)
@@ -215,4 +219,6 @@ def redirect_role_dashboard(role):
         return redirect(url_for('receptionist.dashboard'))
     elif role == 'Patient':
         return redirect(url_for('patient.dashboard'))
+    elif role == 'LabTechnician':
+        return redirect(url_for('lab_technician.dashboard'))
     return redirect(url_for('main.index'))

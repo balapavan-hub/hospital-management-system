@@ -43,6 +43,11 @@
                             <i class="bi bi-person-workspace"></i><span>Receptionists</span>
                         </a>
                     </li>
+                    <li class="sidebar-menu-item {% if 'lab_technician' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.lab_technicians') }}" class="sidebar-menu-link">
+                            <i class="bi bi-person-badge-fill"></i><span>Lab Technicians</span>
+                        </a>
+                    </li>
                     <li class="sidebar-menu-item {% if 'patients' in request.endpoint %}active{% endif %}">
                         <a href="{{ url_for('admin.patients') }}" class="sidebar-menu-link">
                             <i class="bi bi-people-fill"></i><span>Manage Patients</span>
@@ -68,9 +73,19 @@
                             <i class="bi bi-receipt-cutoff"></i><span>Billing Records</span>
                         </a>
                     </li>
-                    <li class="sidebar-menu-item {% if 'lab_tests' in request.endpoint %}active{% endif %}">
+                    <li class="sidebar-menu-item {% if request.endpoint == 'admin.lab_tests' %}active{% endif %}">
                         <a href="{{ url_for('admin.lab_tests') }}" class="sidebar-menu-link">
                             <i class="bi bi-clipboard2-pulse-fill"></i><span>Lab Tests</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'lab_package' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.lab_packages') }}" class="sidebar-menu-link">
+                            <i class="bi bi-box-fill"></i><span>Lab Packages</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-menu-item {% if 'lab_template' in request.endpoint %}active{% endif %}">
+                        <a href="{{ url_for('admin.lab_templates') }}" class="sidebar-menu-link">
+                            <i class="bi bi-activity"></i><span>Lab Parameters</span>
                         </a>
                     </li>
                     <li class="sidebar-menu-item {% if 'reports' in request.endpoint %}active{% endif %}">

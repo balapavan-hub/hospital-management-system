@@ -50,6 +50,11 @@
                         Diagnostic Files ({{ reports | length }})
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="labs-tab" data-bs-toggle="tab" data-bs-target="#labs" type="button" role="tab" aria-controls="labs" aria-selected="false">
+                        Lab Tests ({{ lab_tests | length }})
+                    </button>
+                </li>
             </ul>
 
             <div class="tab-content" id="recordsTabContent">
@@ -165,6 +170,61 @@
                                 {% else %}
                                 <tr>
                                     <td colspan="4" class="text-center text-muted py-4">No diagnostic reports uploaded yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Lab Tests Tab -->
+                <div class="tab-pane fade" id="labs" role="tabpanel" aria-labelledby="labs-tab">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted small">Laboratory orders and completed reports</span>
+                        <a href="{{ url_for('doctor.patient_trends', patient_id=patient.id) }}" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-graph-up-arrow me-1"></i>View Lab Trends & Analysis</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th>Sample ID</th>
+                                    <th>Test Name</th>
+                                    <th>Ordered Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for test in lab_tests %}
+                                <tr>
+                                    <td class="fw-bold">{{ test.sample_id }}</td>
+                                    <td class="fw-bold text-dark">
+                                        {{ test.test_name }}
+                                        {% if test.is_critical %}
+                                            <span class="badge bg-danger rounded-pill px-2.5 py-0.5 ms-1">CRITICAL</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ test.test_date.strftime('%d-%b-%Y') }}</td>
+                                    <td>
+                                        <span class="badge rounded-pill 
+                                            {% if test.status == 'Completed' %}bg-success-subtle text-success
+                                            {% elif test.status == 'Delivered' %}bg-primary
+                                            {% else %}bg-warning-subtle text-warning-emphasis
+                                            {% endif %}">
+                                            {{ test.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        {% if test.status in ['Completed', 'Delivered'] %}
+                                            <a href="{{ url_for('doctor.view_lab_result', test_id=test.id) }}" class="btn btn-outline-primary btn-sm rounded-pill"><i class="bi bi-eye"></i> View Results</a>
+                                        {% else %}
+                                            <span class="text-muted small">{{ test.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">No laboratory tests ordered yet.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

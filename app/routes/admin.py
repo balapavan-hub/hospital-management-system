@@ -5,14 +5,14 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 
 from app.models import db
-from app.models.user import User, Doctor, Patient, Receptionist
+from app.models.user import User, Doctor, Patient, Receptionist, LabTechnician
 from app.models.department import Department
 from app.models.appointment import Appointment
 from app.models.billing import Bill, Payment
 from app.models.room import Room
 from app.models.audit_log import AuditLog
-from app.models.lab_test import LabTest
-from app.forms import DoctorForm, ReceptionistForm, DepartmentForm, RoomForm
+from app.models.lab_test import LabTest, LabPackage, LabTestTemplate, LabInventory
+from app.forms import DoctorForm, ReceptionistForm, DepartmentForm, RoomForm, LabPackageForm, LabTestTemplateForm, LabTechnicianForm
 from app.services import AuditService, ReportService
 
 admin_bp = Blueprint('admin', __name__)
@@ -31,6 +31,7 @@ def dashboard():
     total_patients = Patient.query.count()
     total_doctors = Doctor.query.count()
     total_receptionists = Receptionist.query.count()
+    total_technicians = LabTechnician.query.count()
     
     today_str = date.today()
     today_appointments = Appointment.query.filter_by(appointment_date=today_str).count()
@@ -63,6 +64,7 @@ def dashboard():
         total_patients=total_patients,
         total_doctors=total_doctors,
         total_receptionists=total_receptionists,
+        total_technicians=total_technicians,
         today_appointments=today_appointments,
         available_docs_count=available_docs_count,
         monthly_revenue=monthly_revenue,
@@ -255,6 +257,98 @@ def delete_receptionist(id):
     AuditService.log_action(current_user.id, f"Deleted Receptionist Account: {full_name}")
     flash(f"Receptionist {full_name} deleted successfully.", "success")
     return redirect(url_for('admin.receptionists'))
+
+
+# --- LAB TECHNICIANS MANAGEMENT ---
+@admin_bp.route('/lab-technicians')
+@login_required
+def lab_technicians():
+    search = request.args.get('search', '')
+    page = request.args.get('page', 1, type=int)
+    
+    query = LabTechnician.query
+    if search:
+        query = query.filter(
+            (LabTechnician.first_name.like(f"%{search}%")) |
+            (LabTechnician.last_name.like(f"%{search}%")) |
+            (LabTechnician.employee_id.like(f"%{search}%"))
+        )
+    pagination = query.paginate(page=page, per_page=10)
+    return render_template('admin/lab_technicians.html', pagination=pagination, search=search)
+
+@admin_bp.route('/lab-technicians/add', methods=['GET', 'POST'])
+@login_required
+def add_lab_technician():
+    form = LabTechnicianForm()
+    if form.validate_on_submit():
+        if not form.password.data:
+            form.password.errors.append("Password is required for a new lab technician account.")
+            return render_template('admin/lab_technician_form.html', form=form, title="Add Lab Technician")
+            
+        user = User(email=form.email.data, role='LabTechnician')
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.flush()
+        
+        technician = LabTechnician(
+            user_id=user.id,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            phone=form.phone.data,
+            employee_id=form.employee_id.data
+        )
+        db.session.add(technician)
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Added Lab Technician: {technician.full_name}", request.remote_addr)
+        flash(f"Lab Technician {technician.full_name} added successfully!", "success")
+        return redirect(url_for('admin.lab_technicians'))
+        
+    return render_template('admin/lab_technician_form.html', form=form, title="Add Lab Technician")
+
+@admin_bp.route('/lab-technicians/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_lab_technician(id):
+    technician = LabTechnician.query.get_or_404(id)
+    user = User.query.get(technician.user_id)
+    form = LabTechnicianForm(obj=technician, technician_id=id)
+    
+    if request.method == 'GET':
+        form.email.data = user.email
+        
+    if form.validate_on_submit():
+        user.email = form.email.data
+        if form.password.data:
+            user.set_password(form.password.data)
+            
+        technician.first_name = form.first_name.data
+        technician.last_name = form.last_name.data
+        technician.phone = form.phone.data
+        technician.employee_id = form.employee_id.data
+        
+        db.session.commit()
+        AuditService.log_action(current_user.id, f"Edited Lab Technician ID: {technician.id}", request.remote_addr)
+        flash(f"Lab Technician {technician.full_name} updated successfully!", "success")
+        return redirect(url_for('admin.lab_technicians'))
+        
+    return render_template('admin/lab_technician_form.html', form=form, title="Edit Lab Technician", edit_mode=True)
+
+@admin_bp.route('/lab-technicians/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_lab_technician(id):
+    technician = LabTechnician.query.get_or_404(id)
+    user = User.query.get(technician.user_id)
+    full_name = technician.full_name
+    
+    db.session.delete(technician)
+    if user:
+        db.session.delete(user)
+    db.session.commit()
+    
+    AuditService.log_action(current_user.id, f"Deleted Lab Technician ID: {id}", request.remote_addr)
+    flash(f"Lab Technician {full_name} deleted successfully!", "success")
+    return redirect(url_for('admin.lab_technicians'))
+
 
 # --- PATIENT MANAGEMENT ---
 @admin_bp.route('/patients')
@@ -532,14 +626,16 @@ def audit_logs():
     pagination = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=20)
     return render_template('admin/audit_logs.html', pagination=pagination)
 
-# --- GLOBAL SEARCH API/PAGE ---
 @admin_bp.route('/search')
+@login_required
 def global_search():
     q = request.args.get('q', '').strip()
     results = {
         'patients': [],
         'doctors': [],
         'appointments': [],
+        'prescriptions': [],
+        'lab_tests': [],
         'bills': []
     }
     
@@ -564,6 +660,22 @@ def global_search():
             (Patient.last_name.like(f"%{q}%"))
         ).limit(5).all()
         
+        # Search Prescriptions
+        from app.models.appointment import Prescription
+        results['prescriptions'] = Prescription.query.join(Patient).filter(
+            (Patient.first_name.like(f"%{q}%")) |
+            (Patient.last_name.like(f"%{q}%")) |
+            (Prescription.diagnosis.like(f"%{q}%"))
+        ).limit(5).all()
+        
+        # Search Lab Tests
+        results['lab_tests'] = LabTest.query.join(Patient).filter(
+            (Patient.first_name.like(f"%{q}%")) |
+            (Patient.last_name.like(f"%{q}%")) |
+            (LabTest.sample_id.like(f"%{q}%")) |
+            (LabTest.test_name.like(f"%{q}%"))
+        ).limit(5).all()
+        
         # Search Bills
         results['bills'] = Bill.query.join(Patient).filter(
             (Patient.first_name.like(f"%{q}%")) |
@@ -585,6 +697,9 @@ def api_dashboard_charts():
     
     appt_counts = [0] * 12
     revenue_totals = [0.00] * 12
+    lab_revenue = [0.00] * 12
+    pharmacy_revenue = [0.00] * 12
+    consultation_revenue = [0.00] * 12
     
     # Fill in monthly aggregates
     for a in appts:
@@ -595,6 +710,9 @@ def api_dashboard_charts():
     for b in bills:
         month_idx = b.created_at.month - 1
         revenue_totals[month_idx] += float(b.grand_total)
+        lab_revenue[month_idx] += float(b.lab_charges or 0)
+        pharmacy_revenue[month_idx] += float(b.medicine_charges or 0)
+        consultation_revenue[month_idx] += float(b.consultation_fee or 0)
         
     # Patient growth (registered count by month)
     patients = Patient.query.all()
@@ -610,14 +728,27 @@ def api_dashboard_charts():
         Appointment.query.filter_by(doctor_id=d.id, status='Completed').count() for d in doctors_list
     ]
 
+    # Lab tests categories summary
+    lab_categories = {}
+    completed_labs = LabTest.query.filter(LabTest.status.in_(['Completed', 'Delivered'])).all()
+    for l in completed_labs:
+        lab_categories[l.test_category] = lab_categories.get(l.test_category, 0) + 1
+
     return {
         'months': months,
         'appointments': appt_counts,
         'revenue': revenue_totals,
+        'lab_revenue': lab_revenue,
+        'pharmacy_revenue': pharmacy_revenue,
+        'consultation_revenue': consultation_revenue,
         'patient_growth': patient_counts,
         'doctor_performance': {
             'labels': doc_labels,
             'data': doc_performance
+        },
+        'lab_categories': {
+            'labels': list(lab_categories.keys()),
+            'data': list(lab_categories.values())
         }
     }
 
@@ -672,9 +803,9 @@ def lab_tests():
     # Stats
     stats = {
         'total': LabTest.query.count(),
-        'pending': LabTest.query.filter(LabTest.status != 'Completed', LabTest.status != 'Cancelled').count(),
-        'completed': LabTest.query.filter_by(status='Completed').count(),
-        'revenue': float(db.session.query(func.sum(LabTest.cost)).filter_by(status='Completed').scalar() or 0)
+        'pending': LabTest.query.filter(~LabTest.status.in_(['Completed', 'Delivered', 'Cancelled'])).count(),
+        'completed': LabTest.query.filter(LabTest.status.in_(['Completed', 'Delivered'])).count(),
+        'revenue': float(db.session.query(func.sum(LabTest.cost)).filter(LabTest.status.in_(['Completed', 'Delivered'])).scalar() or 0)
     }
     
     return render_template(
@@ -685,3 +816,145 @@ def lab_tests():
         status_filter=status_filter,
         category_filter=category_filter
     )
+
+
+# --- LAB TEST TEMPLATES CRUD ---
+@admin_bp.route('/lab-templates')
+@login_required
+def lab_templates():
+    templates = LabTestTemplate.query.order_by(LabTestTemplate.test_category, LabTestTemplate.test_name).all()
+    return render_template('admin/lab_templates.html', templates=templates)
+
+@admin_bp.route('/lab-templates/add', methods=['GET', 'POST'])
+@login_required
+def add_lab_template():
+    form = LabTestTemplateForm()
+    if form.validate_on_submit():
+        template = LabTestTemplate(
+            test_name=form.test_name.data.strip(),
+            test_category=form.test_category.data,
+            normal_range_min=form.normal_range_min.data,
+            normal_range_max=form.normal_range_max.data,
+            normal_range_text=form.normal_range_text.data.strip() if form.normal_range_text.data else None,
+            unit=form.unit.data.strip() if form.unit.data else None,
+            age_min=form.age_min.data if form.age_min.data is not None else 0,
+            age_max=form.age_max.data if form.age_max.data is not None else 120,
+            gender=form.gender.data,
+            critical_range_min=form.critical_range_min.data,
+            critical_range_max=form.critical_range_max.data,
+            cost=form.cost.data
+        )
+        db.session.add(template)
+        db.session.commit()
+        AuditService.log_action(current_user.id, f"Created Lab Test Template: {template.test_name}", request.remote_addr)
+        flash(f"Test template '{template.test_name}' added successfully!", 'success')
+        return redirect(url_for('admin.lab_templates'))
+    return render_template('admin/lab_template_form.html', form=form, title="Add Lab Test Parameter")
+
+@admin_bp.route('/lab-templates/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_lab_template(id):
+    template = LabTestTemplate.query.get_or_404(id)
+    form = LabTestTemplateForm(obj=template)
+    if form.validate_on_submit():
+        template.test_name = form.test_name.data.strip()
+        template.test_category = form.test_category.data
+        template.normal_range_min = form.normal_range_min.data
+        template.normal_range_max = form.normal_range_max.data
+        template.normal_range_text = form.normal_range_text.data.strip() if form.normal_range_text.data else None
+        template.unit = form.unit.data.strip() if form.unit.data else None
+        template.age_min = form.age_min.data if form.age_min.data is not None else 0
+        template.age_max = form.age_max.data if form.age_max.data is not None else 120
+        template.gender = form.gender.data
+        template.critical_range_min = form.critical_range_min.data
+        template.critical_range_max = form.critical_range_max.data
+        template.cost = form.cost.data
+        db.session.commit()
+        AuditService.log_action(current_user.id, f"Edited Lab Test Template ID: {template.id}", request.remote_addr)
+        flash(f"Test template '{template.test_name}' updated successfully!", 'success')
+        return redirect(url_for('admin.lab_templates'))
+    return render_template('admin/lab_template_form.html', form=form, title="Edit Lab Test Parameter")
+
+@admin_bp.route('/lab-templates/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_lab_template(id):
+    template = LabTestTemplate.query.get_or_404(id)
+    db.session.delete(template)
+    db.session.commit()
+    AuditService.log_action(current_user.id, f"Deleted Lab Test Template ID: {id}", request.remote_addr)
+    flash(f"Test template deleted successfully!", 'success')
+    return redirect(url_for('admin.lab_templates'))
+
+
+# --- LAB PACKAGES CRUD ---
+@admin_bp.route('/lab-packages')
+@login_required
+def lab_packages():
+    packages = LabPackage.query.order_by(LabPackage.name).all()
+    return render_template('admin/lab_packages.html', packages=packages)
+
+@admin_bp.route('/lab-packages/add', methods=['GET', 'POST'])
+@login_required
+def add_lab_package():
+    form = LabPackageForm()
+    templates_list = LabTestTemplate.query.order_by(LabTestTemplate.test_name).all()
+    form.templates.choices = [(t.id, f"{t.test_name} ({t.test_category})") for t in templates_list]
+    
+    if form.validate_on_submit():
+        package = LabPackage(
+            name=form.name.data.strip(),
+            description=form.description.data.strip() if form.description.data else None,
+            cost=form.cost.data
+        )
+        selected_template_ids = form.templates.data
+        selected_templates = LabTestTemplate.query.filter(LabTestTemplate.id.in_(selected_template_ids)).all()
+        package.templates = selected_templates
+        
+        db.session.add(package)
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Created Lab Package: {package.name}", request.remote_addr)
+        flash(f"Lab Package '{package.name}' added successfully!", 'success')
+        return redirect(url_for('admin.lab_packages'))
+        
+    return render_template('admin/lab_package_form.html', form=form, title="Add Laboratory Package")
+
+@admin_bp.route('/lab-packages/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_lab_package(id):
+    package = LabPackage.query.get_or_404(id)
+    form = LabPackageForm(obj=package)
+    
+    templates_list = LabTestTemplate.query.order_by(LabTestTemplate.test_name).all()
+    form.templates.choices = [(t.id, f"{t.test_name} ({t.test_category})") for t in templates_list]
+    
+    if request.method == 'GET':
+        form.templates.data = [t.id for t in package.templates]
+        
+    if form.validate_on_submit():
+        package.name = form.name.data.strip()
+        package.description = form.description.data.strip() if form.description.data else None
+        package.cost = form.cost.data
+        
+        selected_template_ids = form.templates.data
+        selected_templates = LabTestTemplate.query.filter(LabTestTemplate.id.in_(selected_template_ids)).all()
+        package.templates = selected_templates
+        
+        db.session.commit()
+        
+        AuditService.log_action(current_user.id, f"Updated Lab Package ID: {package.id}", request.remote_addr)
+        flash(f"Lab Package '{package.name}' updated successfully!", 'success')
+        return redirect(url_for('admin.lab_packages'))
+        
+    return render_template('admin/lab_package_form.html', form=form, title="Edit Laboratory Package")
+
+@admin_bp.route('/lab-packages/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_lab_package(id):
+    package = LabPackage.query.get_or_404(id)
+    db.session.delete(package)
+    db.session.commit()
+    AuditService.log_action(current_user.id, f"Deleted Lab Package ID: {id}", request.remote_addr)
+    flash("Lab package deleted successfully!", 'success')
+    return redirect(url_for('admin.lab_packages'))
+

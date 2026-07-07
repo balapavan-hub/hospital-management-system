@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}My Lab Trends & Comparison{% endblock %}
+
+{% block content %}
+<div class="mb-4 animate__animated animate__fadeIn">
+    <a href="{{ url_for('patient.lab_tests') }}" class="btn btn-link p-0 text-decoration-none text-muted"><i class="bi bi-arrow-left me-2"></i>Back to My Lab Tests</a>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>My Lab Trends</h2>
+        <p class="text-muted mb-0">Visualize and compare diagnostic changes over time</p>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="trendTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph" type="button" role="tab">Graphical Trends</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="compare-tab" data-bs-toggle="tab" data-bs-target="#compare" type="button" role="tab">Compare Reports</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="trendTabsContent">
+    <!-- Graphical Trends -->
+    <div class="tab-pane fade show active" id="graph" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100 card-glass">
+                    <h5 class="fw-bold mb-3">Select Parameter</h5>
+                    <div class="list-group list-group-radio">
+                        {% for param_name, data in trends.items() %}
+                        <button type="button" class="list-group-item list-group-item-action rounded-3 mb-2 border-0 fw-semibold text-start shadow-sm py-2.5 px-3" onclick="updateChart('{{ param_name }}')">
+                            {{ param_name }} <span class="badge bg-secondary bg-opacity-10 text-secondary float-end">{{ data.unit }}</span>
+                        </button>
+                        {% else %}
+                        <div class="text-center text-muted py-4">No parameters found for trending. Requires completed tests.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8 mb-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100 card-glass">
+                    <h5 class="fw-bold mb-3" id="chartTitle">Diagnostic Trend</h5>
+                    <div style="position: relative; height: 350px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Comparison -->
+    <div class="tab-pane fade" id="compare" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100 card-glass">
+                    <h5 class="fw-bold mb-3">Select Reports to Compare</h5>
+                    <div class="form-text text-muted mb-3">Choose up to 3 completed reports below to display comparison:</div>
+                    {% for test in completed_tests %}
+                    <div class="form-check mb-3 py-2 px-3 bg-light bg-opacity-40 rounded-3 shadow-sm border-0 d-flex align-items-center">
+                        <input class="form-check-input me-3 compare-checkbox" type="checkbox" value="{{ test.id }}" id="chk_{{ test.id }}" data-name="{{ test.test_name }}" data-date="{{ test.result_date.strftime('%d-%b-%Y') }}" onchange="checkComparisonLimit(this)">
+                        <label class="form-check-label text-dark fw-semibold" for="chk_{{ test.id }}">
+                            {{ test.test_name }}
+                            <div class="small text-muted fw-normal">ID: {{ test.sample_id }} | {{ test.result_date.strftime('%d-%b-%Y') }}</div>
+                        </label>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">No completed reports available.</div>
+                    {% endfor %}
+                    <button type="button" class="btn btn-primary w-100 rounded-pill mt-3 py-2" onclick="buildComparisonTable()">Generate Comparison Table</button>
+                </div>
+            </div>
+            
+            <div class="col-md-8 mb-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100 card-glass">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-layout-split text-primary me-2"></i>Side-by-Side Comparison</h5>
+                    <div class="table-responsive" id="comparisonContainer">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-arrow-left-right fs-1 mb-3 text-primary d-block"></i>
+                            Select completed reports from the left panel and click 'Generate Comparison Table' to analyze readings.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Trends Data Object injected from Jinja
+    const trendsData = {
+        {% for param_name, data in trends.items() %}
+        "{{ param_name }}": {
+            labels: {{ data.dates|tojson }},
+            data: {{ data.values|tojson }},
+            unit: "{{ data.unit }}"
+        },
+        {% endfor %}
+    };
+
+    let activeChart = null;
+
+    function updateChart(paramName) {
+        document.getElementById('chartTitle').innerText = `${paramName} Trend Graph`;
+        const canvas = document.getElementById('trendChart');
+        const ctx = canvas.getContext('2d');
+        
+        const paramData = trendsData[paramName];
+        if (!paramData) return;
+
+        if (activeChart) {
+            activeChart.destroy();
+        }
+
+        activeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: paramData.labels,
+                datasets: [{
+                    label: `${paramName} (${paramData.unit})`,
+                    data: paramData.data,
+                    borderColor: '#1E3A8A',
+                    backgroundColor: 'rgba(30, 58, 138, 0.05)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#1E3A8A'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: '#E5E7EB'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Prefill first trend chart if exists
+    window.addEventListener('load', () => {
+        const keys = Object.keys(trendsData);
+        if (keys.length > 0) {
+            updateChart(keys[0]);
+        }
+    });
+
+    // Comparison Checkbox Limit (Max 3)
+    function checkComparisonLimit(checkbox) {
+        const checkedCount = document.querySelectorAll('.compare-checkbox:checked').length;
+        if (checkedCount > 3) {
+            checkbox.checked = false;
+            alert("You can compare a maximum of 3 laboratory reports at a time.");
+        }
+    }
+
+    // Build comparison table dynamically using API data
+    async function buildComparisonTable() {
+        const selectedIds = Array.from(document.querySelectorAll('.compare-checkbox:checked')).map(cb => cb.value);
+        if (selectedIds.length === 0) {
+            alert("Please select at least one report to compare.");
+            return;
+        }
+
+        const container = document.getElementById('comparisonContainer');
+        container.innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Building comparison...</p></div>`;
+
+        try {
+            // We fetch details using a combined API call or multiple requests
+            const promises = selectedIds.map(id => fetch(`/doctor/view-lab-result/${id}`).then(res => res.text()));
+            const htmlResults = await Promise.all(promises);
+            
+            // Generate a side-by-side data table parsed from HTML response or build parameter lists
+            // A clean approach is to request report parameter data as JSON. Let's write a small API endpoint or fetch it.
+            const apiPromises = selectedIds.map(id => fetch(`/verify-report/${id}?json=1`).then(res => res.json()));
+            const reportData = await Promise.all(apiPromises);
+            
+            // Build the comparison matrix
+            let allParams = new Set();
+            reportData.forEach(rep => {
+                rep.results.forEach(res => {
+                    allParams.add(res.param_name);
+                });
+            });
+            
+            let html = `<table class="table table-bordered table-striped align-middle">`;
+            html += `<thead class="table-light"><tr><th>Parameter</th>`;
+            
+            // Headers
+            reportData.forEach(rep => {
+                html += `<th class="text-center">
+                            <div class="fw-bold">${rep.test_name}</div>
+                            <div class="small text-muted">${rep.result_date}</div>
+                            <span class="badge ${rep.is_critical ? 'bg-danger':'bg-success'} rounded-pill small">${rep.is_critical ? 'Critical':'Normal'}</span>
+                         </th>`;
+            });
+            html += `</tr></thead><tbody>`;
+            
+            // Rows
+            Array.from(allParams).forEach(param => {
+                html += `<tr><td class="fw-bold">${param}</td>`;
+                reportData.forEach(rep => {
+                    const res = rep.results.find(r => r.param_name === param);
+                    if (res) {
+                        let badgeClass = 'bg-success';
+                        if (res.status === 'Low') badgeClass = 'bg-warning text-dark';
+                        if (res.status === 'High') badgeClass = 'bg-danger';
+                        if (res.status === 'Critical') badgeClass = 'bg-dark text-white';
+                        
+                        html += `<td class="text-center">
+                                    <span class="fs-5 fw-bold d-block">${res.value}</span>
+                                    <span class="badge ${badgeClass} rounded-pill small">${res.status}</span>
+                                    <div class="text-muted small mt-1">Range: ${res.range} ${res.unit}</div>
+                                 </td>`;
+                    } else {
+                        html += `<td class="text-center text-muted">N/A</td>`;
+                    }
+                });
+                html += `</tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+            
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="alert alert-danger border-0 rounded-4">Failed to fetch report data. Please try again.</div>`;
+        }
+    }
+</script>
+{% endblock %}

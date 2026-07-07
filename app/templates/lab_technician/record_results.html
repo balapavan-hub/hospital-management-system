@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Record Test Results - {{ lab_test.test_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4 animate__animated animate__fadeIn">
+    <a href="{{ url_for('lab_technician.orders') }}" class="btn btn-link p-0 text-decoration-none text-muted"><i class="bi bi-arrow-left me-2"></i>Back to Lab Orders</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card border-0 shadow-sm rounded-4 p-4 card-glass animate__animated animate__fadeInUp">
+            <div class="d-flex align-items-center mb-4">
+                <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                    <i class="bi bi-file-earmark-medical-fill text-primary fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-1">Record Lab Results</h4>
+                    <p class="text-muted mb-0">Sample ID: <strong class="text-primary">{{ lab_test.sample_id }}</strong> | Patient: <strong>{{ lab_test.patient.full_name }}</strong></p>
+                </div>
+            </div>
+
+            <!-- Patient Info block -->
+            <div class="bg-light bg-opacity-50 rounded-4 p-3 mb-4">
+                <div class="row small g-2">
+                    <div class="col-md-3"><strong>Age/Gender:</strong> <span class="text-muted">{{ lab_test.patient.age }} Yrs / {{ lab_test.patient.gender }}</span></div>
+                    <div class="col-md-3"><strong>Category:</strong> <span class="text-muted">{{ lab_test.test_category }}</span></div>
+                    <div class="col-md-3"><strong>Ordered By:</strong> <span class="text-muted">{{ lab_test.doctor.full_name if lab_test.doctor else 'Self-Ordered' }}</span></div>
+                    <div class="col-md-3"><strong>Ordered Date:</strong> <span class="text-muted">{{ lab_test.test_date.strftime('%d-%b-%Y %H:%M') }}</span></div>
+                </div>
+            </div>
+
+            <form method="POST" class="needs-validation" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <h5 class="fw-bold mb-3"><i class="bi bi-activity text-primary me-2"></i>Test Parameter Readings</h5>
+                
+                <div class="table-responsive mb-4">
+                    <table class="table align-middle">
+                        <thead class="table-light text-muted small">
+                            <tr>
+                                <th>Parameter Name</th>
+                                <th>Applicability</th>
+                                <th>Normal Range</th>
+                                <th>Unit</th>
+                                <th style="width: 220px;">Observed Value <span class="text-danger">*</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in templates %}
+                            <tr>
+                                <td class="fw-bold text-dark">{{ t.test_name }}</td>
+                                <td>
+                                    <div class="small text-muted">Gender: {{ t.gender }}</div>
+                                    <div class="small text-muted">Age: {{ t.age_min }} - {{ t.age_max }} Yrs</div>
+                                </td>
+                                <td class="text-muted fw-semibold">
+                                    {{ t.normal_range_text or (t.normal_range_min|string + " - " + t.normal_range_max|string) }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill">{{ t.unit or 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <input type="text" 
+                                           name="observed_{{ t.id }}" 
+                                           class="form-control rounded-pill px-3" 
+                                           placeholder="Observed value"
+                                           value="{{ existing_results.get(t.id, '') }}"
+                                           required>
+                                    <div class="invalid-feedback">Please enter a reading value.</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="interpretation" class="form-label fw-semibold">Diagnostic Interpretation / Summary</label>
+                        <textarea name="interpretation" id="interpretation" rows="3" class="form-control" placeholder="Summarize the test interpretations...">{{ lab_test.interpretation or '' }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="remarks" class="form-label fw-semibold">Technician Remarks</label>
+                        <textarea name="remarks" id="remarks" rows="3" class="form-control" placeholder="Any technician notes or remarks...">{{ lab_test.remarks or '' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-primary px-5 py-2.5 rounded-pill shadow-sm"><i class="bi bi-file-earmark-check-fill me-2"></i>Save results and complete test</button>
+                    <a href="{{ url_for('lab_technician.orders') }}" class="btn btn-outline-secondary px-4 py-2.5 rounded-pill">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Enable Bootstrap validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+</script>
+{% endblock %}

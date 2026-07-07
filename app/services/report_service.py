@@ -1,12 +1,15 @@
 import io
+import os
+import qrcode
 from datetime import datetime
 from decimal import Decimal
 import pandas as pd
+from flask import current_app
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 class ReportService:
@@ -447,3 +450,194 @@ class ReportService:
         df = pd.DataFrame(data_dict)
         csv_str = df.to_csv(index=False)
         return csv_str.encode('utf-8')
+
+    @staticmethod
+    def generate_lab_report_pdf(lab_test):
+        """
+        Generate a professional laboratory PDF report with QR code and parameter statuses.
+        """
+        from app.models.setting import SystemSetting
+        
+        # Load hospital name
+        setting = SystemSetting.query.filter_by(setting_key='hospital_name').first()
+        hospital_name = setting.setting_value if setting else "MediCare Hospital"
+        
+        # Define output filepath
+        filename = f"lab_report_{lab_test.sample_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+        filepath = os.path.join(current_app.config['REPORTS_FOLDER'], filename)
+        
+        doc = SimpleDocTemplate(
+            filepath,
+            pagesize=letter,
+            rightMargin=40,
+            leftMargin=40,
+            topMargin=40,
+            bottomMargin=40
+        )
+        
+        styles = getSampleStyleSheet()
+        
+        # Define styles
+        title_style = ParagraphStyle(
+            'HospTitle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, leading=26,
+            textColor=colors.HexColor('#1E3A8A'), alignment=1
+        )
+        subtitle_style = ParagraphStyle(
+            'HospSubTitle', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12,
+            textColor=colors.HexColor('#4B5563'), alignment=1
+        )
+        section_title = ParagraphStyle(
+            'SecTitle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=12, leading=16,
+            textColor=colors.HexColor('#1E3A8A'), spaceBefore=8, spaceAfter=4
+        )
+        label_style = ParagraphStyle(
+            'Lbl', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11,
+            textColor=colors.HexColor('#1F2937')
+        )
+        val_style = ParagraphStyle(
+            'Val', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11,
+            textColor=colors.HexColor('#4B5563')
+        )
+        th_style = ParagraphStyle(
+            'Th', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.white
+        )
+        td_style = ParagraphStyle(
+            'Td', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12
+        )
+        td_bold_style = ParagraphStyle(
+            'TdBold', parent=td_style, fontName='Helvetica-Bold'
+        )
+        
+        story = []
+        
+        # 1. Header
+        story.append(Paragraph(hospital_name, title_style))
+        story.append(Paragraph("Diagnostic Laboratory Division | 123 Healthcare Blvd | Phone: +91 98765 43210", subtitle_style))
+        story.append(Spacer(1, 10))
+        
+        # Line
+        line = Table([[""]], colWidths=[doc.width])
+        line.setStyle(TableStyle([
+            ('LINEBELOW', (0,0), (-1,-1), 1.5, colors.HexColor('#1E3A8A')),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+        ]))
+        story.append(line)
+        story.append(Spacer(1, 10))
+        
+        # 2. Patient & Sample details
+        patient = lab_test.patient
+        date_str = lab_test.test_date.strftime('%d-%b-%Y %I:%M %p')
+        result_date_str = lab_test.result_date.strftime('%d-%b-%Y %I:%M %p') if lab_test.result_date else 'Pending'
+        
+        meta_data = [
+            [Paragraph("Patient Name:", label_style), Paragraph(patient.full_name, val_style),
+             Paragraph("Sample ID:", label_style), Paragraph(lab_test.sample_id, val_style)],
+            [Paragraph("Age / Gender:", label_style), Paragraph(f"{patient.age} Y / {patient.gender}", val_style),
+             Paragraph("Status:", label_style), Paragraph(lab_test.status, val_style)],
+            [Paragraph("Ref Doctor:", label_style), Paragraph(lab_test.doctor.full_name if lab_test.doctor else 'Self-Ordered', val_style),
+             Paragraph("Sample Collected:", label_style), Paragraph(date_str, val_style)],
+            [Paragraph("Lab Tech:", label_style), Paragraph(lab_test.lab_technician.full_name if lab_test.lab_technician else 'N/A', val_style),
+             Paragraph("Report Generated:", label_style), Paragraph(result_date_str, val_style)]
+        ]
+        meta_table = Table(meta_data, colWidths=[doc.width*0.18, doc.width*0.32, doc.width*0.18, doc.width*0.32])
+        meta_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F3F4F6')),
+            ('PADDING', (0,0), (-1,-1), 4),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.white),
+        ]))
+        story.append(meta_table)
+        story.append(Spacer(1, 15))
+        
+        # 3. Test Details Title
+        story.append(Paragraph(f"Laboratory Findings - {lab_test.test_name}", section_title))
+        
+        # 4. Results Table
+        table_data = [
+            [Paragraph("Parameter", th_style), 
+             Paragraph("Reference Range", th_style), 
+             Paragraph("Unit", th_style), 
+             Paragraph("Observed Value", th_style), 
+             Paragraph("Evaluation", th_style)]
+        ]
+        
+        for r in lab_test.results:
+            eval_color = '#10B981' # Normal (Green)
+            if r.result_status == 'Low': eval_color = '#F59E0B' # Orange
+            elif r.result_status == 'High': eval_color = '#EF4444' # Red
+            elif r.result_status == 'Critical': eval_color = '#7F0000' # Dark Red
+            
+            eval_p = Paragraph(f"<font color='{eval_color}'><b>{r.result_status}</b></font>", td_bold_style)
+            val_p = Paragraph(f"<b>{r.observed_value}</b>", td_bold_style)
+            
+            table_data.append([
+                Paragraph(r.template.test_name, td_style),
+                Paragraph(r.normal_range_used or 'N/A', td_style),
+                Paragraph(r.unit_used or '', td_style),
+                val_p,
+                eval_p
+            ])
+            
+        res_table = Table(table_data, colWidths=[doc.width*0.3, doc.width*0.22, doc.width*0.12, doc.width*0.18, doc.width*0.18])
+        res_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1E3A8A')),
+            ('PADDING', (0,0), (-1,-1), 6),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E5E7EB')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ]))
+        story.append(res_table)
+        story.append(Spacer(1, 15))
+        
+        # 5. Interpretations & Remarks
+        if lab_test.interpretation:
+            story.append(Paragraph("Clinical Interpretation", section_title))
+            story.append(Paragraph(lab_test.interpretation, td_style))
+            story.append(Spacer(1, 10))
+            
+        if lab_test.remarks:
+            story.append(Paragraph("Technician Remarks", section_title))
+            story.append(Paragraph(lab_test.remarks, td_style))
+            story.append(Spacer(1, 15))
+            
+        # 6. Generate Verification QR Code
+        qr_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'qrcodes')
+        os.makedirs(qr_dir, exist_ok=True)
+        
+        verify_url = f"https://hospital-management-system-uuuq.onrender.com/verify-report/{lab_test.id}"
+        
+        qr = qrcode.QRCode(version=1, box_size=3, border=2)
+        qr.add_data(verify_url)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        
+        qr_filename = f"qr_{lab_test.sample_id}.png"
+        qr_filepath = os.path.join(qr_dir, qr_filename)
+        qr_img.save(qr_filepath)
+        
+        # Save qr path relative to static
+        lab_test.qr_code_path = f"qrcodes/{qr_filename}"
+        
+        # Footer layout: QR code left, Signatures right
+        footer_data = [
+            [
+                Image(qr_filepath, width=1.1*inch, height=1.1*inch),
+                Paragraph("<b>Authorized Signatory</b><br/>"
+                          "Digitally Signed Report<br/>"
+                          f"Verified on: {datetime.now().strftime('%d-%b-%Y')}<br/>"
+                          "Scan QR to Verify Authenticity", subtitle_style)
+            ]
+        ]
+        footer_table = Table(footer_data, colWidths=[1.3*inch, doc.width - 1.3*inch])
+        footer_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('PADDING', (0,0), (-1,-1), 0),
+        ]))
+        
+        story.append(Spacer(1, 30))
+        story.append(KeepTogether(footer_table))
+        
+        # Build PDF
+        doc.build(story)
+        return filename
+
