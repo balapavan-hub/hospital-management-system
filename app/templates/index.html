@@ -89,7 +89,7 @@
                             <i class="bi {{ dept.icon_name }} fs-3"></i>
                         </div>
                         <h5 class="fw-bold">{{ dept.name }}</h5>
-                        <p class="text-muted small mb-0">{{ dept.description | truncate(90) }}</p>
+                        <p class="text-muted small mb-0">{{ (dept.description or '') | truncate(90) }}</p>
                     </div>
                 </div>
                 {% endfor %}
@@ -143,7 +143,7 @@
                         <h5 class="fw-bold mb-1">{{ doc.full_name }}</h5>
                         <div class="text-primary small fw-semibold mb-2">{{ doc.specialization }}</div>
                         <div class="badge bg-success-subtle text-success mb-3">{{ doc.qualification }}</div>
-                        <p class="text-muted small mb-3">{{ doc.bio | truncate(100) or 'Consultant doctor at MediCare Hospital.' }}</p>
+                        <p class="text-muted small mb-3">{{ (doc.bio or 'Consultant doctor at MediCare Hospital.') | truncate(100) }}</p>
                         <div class="mt-auto">
                             <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm rounded-pill w-100">Book Consult</a>
                         </div>
