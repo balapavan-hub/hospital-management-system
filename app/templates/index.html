@@ -553,10 +553,8 @@
             <div class="collapse navbar-collapse" id="navbarText">
                 <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-1 gap-lg-3">
                     <li class="nav-item"><a class="nav-link nav-link-custom" href="#home">Home</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#solutions">Previews</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#pricing">Metrics</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#security">Security</a></li>
-                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#stakeholders">Stakeholders</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-custom" href="#metrics">Metrics</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn btn-link p-0 theme-toggle-btn text-secondary" id="theme-toggle" title="Toggle Light/Dark Theme">
@@ -625,7 +623,7 @@
                         </p>
                         <div class="d-flex flex-wrap gap-3">
                             <a href="{{ url_for('auth.register_hospital') }}" class="btn btn-primary btn-lg px-4 py-3 rounded-3 shadow-sm fw-semibold btn-ripple">Get Started</a>
-                            <a href="#solutions" class="btn btn-outline-secondary btn-lg px-4 py-3 rounded-3 fw-semibold btn-ripple">Explore Platform</a>
+                            <a href="#stakeholders" class="btn btn-outline-secondary btn-lg px-4 py-3 rounded-3 fw-semibold btn-ripple">Explore Nodes</a>
                         </div>
                     </div>
                     
@@ -706,86 +704,10 @@
         </header>
     </div>
 
-    <!-- Solutions & Dashboard Previews Section -->
-    <section class="section-padding scroll-trigger" id="solutions">
+    <!-- Stakeholders Section -->
+    <section class="section-padding bg-white scroll-trigger" id="stakeholders">
         <div class="container">
             <div class="text-center mb-5">
-                <span class="text-primary fw-bold text-uppercase tracking-wider">Enterprise Previews</span>
-                <h2 class="section-title mt-2">Unified Dashboard Previews</h2>
-                <p class="section-subtitle">Dedicated interface models engineered for optimal hospital performance and tracking.</p>
-            </div>
-
-            <div class="row g-4">
-                <!-- Admin Dashboard Preview -->
-                <div class="col-lg-6">
-                    <div class="mockup-container">
-                        <div class="mockup-header">
-                            <span class="mockup-dot bg-danger"></span>
-                            <span class="mockup-dot bg-warning"></span>
-                            <span class="mockup-dot bg-success"></span>
-                            <span class="ms-2 text-muted small">Admin Dashboard Preview</span>
-                        </div>
-                        <div class="d-flex">
-                            <div class="mockup-sidebar">
-                                <div class="mockup-sidebar-item" style="width: 90%;"></div>
-                                <div class="mockup-sidebar-item"></div>
-                                <div class="mockup-sidebar-item" style="width: 70%;"></div>
-                                <div class="mockup-sidebar-item" style="width: 85%;"></div>
-                            </div>
-                            <div class="mockup-content">
-                                <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <div class="p-2 border rounded bg-light">
-                                            <div class="text-muted small">Total Doctors</div>
-                                            <div class="fw-bold text-primary">124 Active</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="p-2 border rounded bg-light">
-                                            <div class="text-muted small">Active Beds</div>
-                                            <div class="fw-bold text-success">88% Occupied</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mockup-bar" style="width: 100%;"></div>
-                                <div class="mockup-bar" style="width: 90%;"></div>
-                                <div class="mockup-bar" style="width: 75%;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Doctor OPD Portal Preview -->
-                <div class="col-lg-6">
-                    <div class="mockup-container">
-                        <div class="mockup-header">
-                            <span class="mockup-dot bg-danger"></span>
-                            <span class="mockup-dot bg-warning"></span>
-                            <span class="mockup-dot bg-success"></span>
-                            <span class="ms-2 text-muted small">Doctor OPD Portal Preview</span>
-                        </div>
-                        <div class="d-flex">
-                            <div class="mockup-sidebar">
-                                <div class="mockup-sidebar-item" style="width: 80%;"></div>
-                                <div class="mockup-sidebar-item" style="width: 90%;"></div>
-                                <div class="mockup-sidebar-item"></div>
-                            </div>
-                            <div class="mockup-content">
-                                <div class="border rounded p-2 mb-2 bg-light">
-                                    <div class="fw-bold text-dark small">Patient: Amit Kumar</div>
-                                    <div class="text-secondary small">Vitals: Blood Pressure 120/80 mmHg | Temp: 98.6F</div>
-                                </div>
-                                <div class="mockup-bar" style="width: 100%; background-color: var(--border-color);"></div>
-                                <div class="mockup-bar" style="width: 95%;"></div>
-                                <div class="mockup-bar" style="width: 40%; background-color: var(--primary-color);"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
                 <span class="text-primary fw-bold text-uppercase tracking-wider">Platform Stakeholders</span>
                 <h2 class="section-title mt-2">Connecting the Healthcare Ecosystem</h2>
                 <p class="section-subtitle">Flexible integration interfaces engineered for all nodes in the medical pathway.</p>
@@ -825,7 +747,7 @@
     </section>
 
     <!-- Platform Stats Section -->
-    <section class="section-padding bg-primary text-white scroll-trigger" id="pricing">
+    <section class="section-padding bg-primary text-white scroll-trigger" id="metrics">
         <div class="container">
             <div class="row align-items-center g-5 text-center text-lg-start">
                 <div class="col-lg-5">
@@ -864,72 +786,7 @@
         </div>
     </section>
 
-    <!-- Security & Compliance Section -->
-    <section class="section-padding bg-white scroll-trigger" id="security">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="text-primary fw-bold text-uppercase tracking-wider">Enterprise Security</span>
-                <h2 class="section-title mt-2">Bank-Grade Protection Protocols</h2>
-                <p class="section-subtitle">We prioritize data privacy, network compliance, and system reliability.</p>
-            </div>
-            
-            <div class="row g-4 stagger-container">
-                <div class="col-md-4 stagger-item">
-                    <div class="enterprise-card h-100 border-start border-primary border-3">
-                        <i class="bi bi-shield-lock enterprise-icon"></i>
-                        <h5 class="fw-bold">AES-256 Encryption</h5>
-                        <p class="text-secondary small mb-0">Patient EMR data, billing records, and clinical logs are encrypted during transfer and storage.</p>
-                    </div>
-                </div>
-                <div class="col-md-4 stagger-item">
-                    <div class="enterprise-card h-100 border-start border-primary border-3">
-                        <i class="bi bi-key-fill enterprise-icon"></i>
-                        <h5 class="fw-bold">Role Isolation</h5>
-                        <p class="text-secondary small mb-0">Ensuring clinicians only view relevant charts while pharmacist operators access inventory controls.</p>
-                    </div>
-                </div>
-                <div class="col-md-4 stagger-item">
-                    <div class="enterprise-card h-100 border-start border-primary border-3">
-                        <i class="bi bi-journal-text enterprise-icon"></i>
-                        <h5 class="fw-bold">Security Audit Logging</h5>
-                        <p class="text-secondary small mb-0">IP tracking and automated audit trails document all modifications to prevent unauthorized changes.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- Why MediConnect Section -->
-    <section class="section-padding bg-light scroll-trigger" id="about">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="text-primary fw-bold text-uppercase tracking-wider">Architectural Advantages</span>
-                <h2 class="section-title mt-2">Why Choose MediConnect India</h2>
-                <p class="section-subtitle">Engineered to support national digitisation and centralized medical infrastructure.</p>
-            </div>
-            
-            <div class="row g-4 stagger-container">
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="p-4 bg-white border rounded-3 h-100">
-                        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-cloud-arrow-up me-2"></i>Cloud-Based Architecture</h6>
-                        <p class="text-secondary small mb-0">Zero hardware deployment costs. Scale storage dynamically without downtime.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="p-4 bg-white border rounded-3 h-100">
-                        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-lightning-fill me-2"></i>Real-time Data Synced</h6>
-                        <p class="text-secondary small mb-0">Lab diagnostics and OPD billing logs update instantly across patient accounts.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4 stagger-item">
-                    <div class="p-4 bg-white border rounded-3 h-100">
-                        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-journal-medical me-2"></i>Paperless Operations</h6>
-                        <p class="text-secondary small mb-0">Move from physical slip-sheets to complete electronic logging for pharmacies and labs.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Testimonials Section -->
     <section class="section-padding bg-white scroll-trigger">
@@ -982,21 +839,20 @@
                     <p class="text-secondary small">Centralized healthcare infrastructure software connecting hospitals, clinics, laboratories, pharmacies, and patients under one national security architecture.</p>
                 </div>
                 <div class="col-md-3 col-lg-2">
-                    <div class="footer-title">Solutions</div>
+                    <div class="footer-title">Ecosystem</div>
                     <ul class="list-unstyled d-flex flex-column gap-2">
-                        <li><a class="footer-link" href="#solutions">Hospital Network Console</a></li>
-                        <li><a class="footer-link" href="#solutions">Practitioner Portal</a></li>
-                        <li><a class="footer-link" href="#solutions">Laboratory Suite</a></li>
-                        <li><a class="footer-link" href="#solutions">Pharmacy System</a></li>
+                        <li><a class="footer-link" href="#stakeholders">Hospital Nodes</a></li>
+                        <li><a class="footer-link" href="#stakeholders">Clinical Staff</a></li>
+                        <li><a class="footer-link" href="#stakeholders">Diagnostics</a></li>
+                        <li><a class="footer-link" href="#stakeholders">Patients</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3 col-lg-2">
-                    <div class="footer-title">Platform</div>
+                    <div class="footer-title">Metrics</div>
                     <ul class="list-unstyled d-flex flex-column gap-2">
-                        <li><a class="footer-link" href="#security">AES Encryption</a></li>
-                        <li><a class="footer-link" href="#security">Audit Trails</a></li>
-                        <li><a class="footer-link" href="#solutions">Developer APIs</a></li>
-                        <li><a class="footer-link" href="#pricing">Metrics Engine</a></li>
+                        <li><a class="footer-link" href="#metrics">Real-time Counters</a></li>
+                        <li><a class="footer-link" href="{{ url_for('auth.register_hospital') }}">Register Hub</a></li>
+                        <li><a class="footer-link" href="{{ url_for('auth.register') }}">Patient Portal</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3 col-lg-2">
