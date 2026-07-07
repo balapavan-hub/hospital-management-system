@@ -11,16 +11,20 @@ def login_redirect():
 @main_bp.route('/')
 @main_bp.route('/index')
 def index():
+    from app.models.hospital import Hospital
+    from app.models.room import Room
+    from app.models.user import Patient
+    
     # Load departments and doctors to display on landing page
     departments = Department.query.limit(6).all()
     doctors = Doctor.query.filter_by(availability_status='Available').limit(4).all()
     
-    # Static stats
+    # Real dynamic stats
     stats = {
-        'patients_served': '15,000+',
-        'expert_doctors': Doctor.query.count() or '25',
-        'departments_count': Department.query.count() or '10',
-        'rooms_available': '85'
+        'patients_served': Patient.query.count(),
+        'expert_doctors': Doctor.query.count(),
+        'departments_count': Department.query.count(),
+        'hospitals_count': Hospital.query.filter_by(status='Approved').count()
     }
     
     return render_template(
