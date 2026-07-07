@@ -93,6 +93,8 @@ def add_doctor():
     form = DoctorForm()
     # Populate departments dropdown from hospital departments
     form.department_id.choices = [(d.id, d.name) for d in Department.query.filter_by(hospital_id=current_user.hospital_id).all()]
+    print(f"DEBUG: Logged in user: {current_user.email}, Hospital ID: {current_user.hospital_id}")
+    print(f"DEBUG: Form department choices: {form.department_id.choices}")
     
     if form.validate_on_submit():
         user = User(email=form.email.data, role='Doctor', hospital_id=current_user.hospital_id)

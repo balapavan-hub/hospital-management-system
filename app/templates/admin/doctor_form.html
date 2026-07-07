@@ -48,6 +48,12 @@
                     <div class="col-md-6">
                         <label for="department_id" class="form-label font-weight-bold">Department</label>
                         {{ form.department_id(class="form-select rounded-3", id="department_id") }}
+                        {% if not form.department_id.choices %}
+                            <div class="text-warning small mt-1">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> No departments created yet. 
+                                <a href="{{ url_for('admin.add_department') }}" class="text-decoration-none fw-bold">Create Department</a>
+                            </div>
+                        {% endif %}
                         {% if form.department_id.errors %}
                             <div class="text-danger small mt-1">{% for e in form.department_id.errors %}{{ e }}{% endfor %}</div>
                         {% endif %}
