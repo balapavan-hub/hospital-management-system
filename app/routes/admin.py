@@ -924,3 +924,76 @@ def delete_lab_package(id):
 def reports():
     return render_template('admin/reports.html')
 
+# ----------------------------------------------------
+# APPOINTMENTS
+# ----------------------------------------------------
+
+@admin_bp.route('/appointments')
+def appointments():
+    h_id = current_user.hospital_id
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+    query = Appointment.query.filter_by(hospital_id=h_id)
+    if search:
+        query = query.join(Patient).filter(
+            (Patient.first_name.ilike(f'%{search}%')) |
+            (Patient.last_name.ilike(f'%{search}%'))
+        )
+    pagination = query.order_by(Appointment.created_at.desc()).paginate(page=page, per_page=20)
+    return render_template('admin/appointments.html', pagination=pagination, search=search)
+
+@admin_bp.route('/appointments/<int:id>/cancel', methods=['POST'])
+def cancel_appointment(id):
+    appt = Appointment.query.get_or_404(id)
+    if appt.hospital_id != current_user.hospital_id:
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('admin.appointments'))
+    appt.status = 'Cancelled'
+    db.session.commit()
+    AuditService.log_action(current_user.id, f"Cancelled Appointment ID: {id}", request.remote_addr)
+    flash('Appointment cancelled successfully.', 'success')
+    return redirect(url_for('admin.appointments'))
+
+# ----------------------------------------------------
+# DELETE PATIENT
+# ----------------------------------------------------
+
+@admin_bp.route('/patients/delete/<int:id>', methods=['POST'])
+def delete_patient(id):
+    patient = Patient.query.get_or_404(id)
+    user = User.query.get(patient.user_id)
+    db.session.delete(patient)
+    if user:
+        db.session.delete(user)
+    db.session.commit()
+    AuditService.log_action(current_user.id, f"Deleted Patient ID: {id}", request.remote_addr)
+    flash('Patient record deleted successfully.', 'success')
+    return redirect(url_for('admin.patients'))
+
+# ----------------------------------------------------
+# GLOBAL SEARCH
+# ----------------------------------------------------
+
+@admin_bp.route('/search')
+def global_search():
+    h_id = current_user.hospital_id
+    q = request.args.get('q', '').strip()
+    results = {
+        'doctors': [],
+        'patients': [],
+        'appointments': []
+    }
+    if q:
+        results['doctors'] = Doctor.query.filter_by(hospital_id=h_id).filter(
+            (Doctor.first_name.ilike(f'%{q}%')) | (Doctor.last_name.ilike(f'%{q}%'))
+        ).limit(10).all()
+        results['patients'] = Patient.query.join(Appointment).filter(
+            Appointment.hospital_id == h_id,
+            (Patient.first_name.ilike(f'%{q}%')) | (Patient.last_name.ilike(f'%{q}%'))
+        ).distinct().limit(10).all()
+        results['appointments'] = Appointment.query.filter_by(hospital_id=h_id).join(Patient).filter(
+            (Patient.first_name.ilike(f'%{q}%')) | (Patient.last_name.ilike(f'%{q}%'))
+        ).limit(10).all()
+    return render_template('admin/search_results.html', results=results, query=q)
+
+
