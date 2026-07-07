@@ -14,6 +14,9 @@ def index():
     from app.models.hospital import Hospital
     from app.models.room import Room
     from app.models.user import Patient
+    from app.models.appointment import Appointment
+    from app.models.lab_test import LabTest
+    from app.models.prescription import Prescription
     
     # Load departments and doctors to display on landing page
     departments = Department.query.limit(6).all()
@@ -24,7 +27,10 @@ def index():
         'patients_served': Patient.query.count(),
         'expert_doctors': Doctor.query.count(),
         'departments_count': Department.query.count(),
-        'hospitals_count': Hospital.query.filter_by(status='Approved').count()
+        'hospitals_count': Hospital.query.filter_by(status='Approved').count(),
+        'appointments_count': Appointment.query.count(),
+        'lab_tests_count': LabTest.query.count(),
+        'prescriptions_count': Prescription.query.count()
     }
     
     return render_template(

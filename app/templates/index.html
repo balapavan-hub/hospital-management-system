@@ -960,16 +960,28 @@
                 <div class="col-lg-7">
                     <div class="row g-4">
                         <div class="col-sm-4">
-                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="2500">0</div>
+                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="{{ stats.hospitals_count }}">0</div>
                             <div class="text-white-50 small">Hospitals Connected</div>
                         </div>
                         <div class="col-sm-4">
-                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="15000">0</div>
+                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="{{ stats.expert_doctors }}">0</div>
                             <div class="text-white-50 small">Doctors Registered</div>
                         </div>
                         <div class="col-sm-4">
-                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="1200000">0</div>
+                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="{{ stats.patients_served }}">0</div>
                             <div class="text-white-50 small">Patients Served</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="{{ stats.appointments_count }}">0</div>
+                            <div class="text-white-50 small">Appointments Managed</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="{{ stats.lab_tests_count }}">0</div>
+                            <div class="text-white-50 small">Laboratory Tests</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="h2 fw-bold text-white mb-1 count-target" data-value="{{ stats.prescriptions_count }}">0</div>
+                            <div class="text-white-50 small">Prescriptions Generated</div>
                         </div>
                     </div>
                 </div>
@@ -1346,7 +1358,7 @@
                     } else if (target >= 1000) {
                         counter.textContent = currentVal.toLocaleString() + "+";
                     } else {
-                        counter.textContent = currentVal + "+";
+                        counter.textContent = currentVal;
                     }
                     
                     if (progress < 1) {
