@@ -706,3 +706,221 @@ def export_reports(report_type, format_type):
 def audit_logs():
     logs = AuditLog.query.filter_by(hospital_id=current_user.hospital_id).order_by(AuditLog.created_at.desc()).all()
     return render_template('admin/audit_logs.html', logs=logs)
+
+# ----------------------------------------------------
+# BILLING RECORDS
+# ----------------------------------------------------
+
+@admin_bp.route('/billing')
+def billing():
+    h_id = current_user.hospital_id
+    page = request.args.get('page', 1, type=int)
+    pagination = Bill.query.filter_by(hospital_id=h_id).order_by(Bill.created_at.desc()).paginate(page=page, per_page=20)
+    return render_template('admin/billing.html', pagination=pagination)
+
+# ----------------------------------------------------
+# PATIENTS LIST
+# ----------------------------------------------------
+
+@admin_bp.route('/patients')
+def patients():
+    h_id = current_user.hospital_id
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+    query = Patient.query.join(Appointment).filter(Appointment.hospital_id == h_id).distinct()
+    if search:
+        query = query.filter(
+            (Patient.first_name.ilike(f'%{search}%')) |
+            (Patient.last_name.ilike(f'%{search}%'))
+        )
+    pagination = query.order_by(Patient.created_at.desc()).paginate(page=page, per_page=20)
+    return render_template('admin/patients.html', pagination=pagination, search=search)
+
+# ----------------------------------------------------
+# LAB TESTS
+# ----------------------------------------------------
+
+@admin_bp.route('/lab-tests')
+def lab_tests():
+    h_id = current_user.hospital_id
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+    status_filter = request.args.get('status', '')
+    category_filter = request.args.get('category', '')
+
+    query = LabTest.query.filter_by(hospital_id=h_id)
+    if search:
+        query = query.join(Patient).filter(
+            (Patient.first_name.ilike(f'%{search}%')) |
+            (Patient.last_name.ilike(f'%{search}%'))
+        )
+    if status_filter:
+        query = query.filter(LabTest.status == status_filter)
+    if category_filter:
+        query = query.filter(LabTest.test_category == category_filter)
+
+    pagination = query.order_by(LabTest.test_date.desc()).paginate(page=page, per_page=15)
+
+    stats = {
+        'total': LabTest.query.filter_by(hospital_id=h_id).count(),
+        'pending': LabTest.query.filter_by(hospital_id=h_id).filter(~LabTest.status.in_(['Completed', 'Delivered', 'Cancelled'])).count(),
+        'completed': LabTest.query.filter_by(hospital_id=h_id).filter(LabTest.status.in_(['Completed', 'Delivered'])).count(),
+        'revenue': float(db.session.query(func.sum(LabTest.cost)).filter(LabTest.hospital_id == h_id, LabTest.status.in_(['Completed', 'Delivered'])).scalar() or 0)
+    }
+
+    return render_template(
+        'admin/lab_tests.html',
+        pagination=pagination,
+        stats=stats,
+        search=search,
+        status_filter=status_filter,
+        category_filter=category_filter
+    )
+
+# ----------------------------------------------------
+# LAB TEST TEMPLATES CRUD
+# ----------------------------------------------------
+
+@admin_bp.route('/lab-templates')
+def lab_templates():
+    templates = LabTestTemplate.query.filter_by(hospital_id=current_user.hospital_id).order_by(LabTestTemplate.test_category, LabTestTemplate.test_name).all()
+    return render_template('admin/lab_templates.html', templates=templates)
+
+@admin_bp.route('/lab-templates/add', methods=['GET', 'POST'])
+def add_lab_template():
+    form = LabTestTemplateForm()
+    if form.validate_on_submit():
+        template = LabTestTemplate(
+            hospital_id=current_user.hospital_id,
+            test_name=form.test_name.data.strip(),
+            test_category=form.test_category.data,
+            normal_range_min=form.normal_range_min.data,
+            normal_range_max=form.normal_range_max.data,
+            normal_range_text=form.normal_range_text.data.strip() if form.normal_range_text.data else None,
+            unit=form.unit.data.strip() if form.unit.data else None,
+            age_min=form.age_min.data if form.age_min.data is not None else 0,
+            age_max=form.age_max.data if form.age_max.data is not None else 120,
+            gender=form.gender.data,
+            critical_range_min=form.critical_range_min.data,
+            critical_range_max=form.critical_range_max.data,
+            cost=form.cost.data
+        )
+        db.session.add(template)
+        db.session.commit()
+        AuditService.log_action(current_user.id, f"Created Lab Test Template: {template.test_name}", request.remote_addr)
+        flash(f"Test template '{template.test_name}' added successfully!", 'success')
+        return redirect(url_for('admin.lab_templates'))
+    return render_template('admin/lab_template_form.html', form=form, title="Add Lab Test Parameter")
+
+@admin_bp.route('/lab-templates/edit/<int:id>', methods=['GET', 'POST'])
+def edit_lab_template(id):
+    template = LabTestTemplate.query.get_or_404(id)
+    form = LabTestTemplateForm(obj=template)
+    if form.validate_on_submit():
+        template.test_name = form.test_name.data.strip()
+        template.test_category = form.test_category.data
+        template.normal_range_min = form.normal_range_min.data
+        template.normal_range_max = form.normal_range_max.data
+        template.normal_range_text = form.normal_range_text.data.strip() if form.normal_range_text.data else None
+        template.unit = form.unit.data.strip() if form.unit.data else None
+        template.age_min = form.age_min.data if form.age_min.data is not None else 0
+        template.age_max = form.age_max.data if form.age_max.data is not None else 120
+        template.gender = form.gender.data
+        template.critical_range_min = form.critical_range_min.data
+        template.critical_range_max = form.critical_range_max.data
+        template.cost = form.cost.data
+        db.session.commit()
+        AuditService.log_action(current_user.id, f"Edited Lab Test Template ID: {template.id}", request.remote_addr)
+        flash(f"Test template '{template.test_name}' updated successfully!", 'success')
+        return redirect(url_for('admin.lab_templates'))
+    return render_template('admin/lab_template_form.html', form=form, title="Edit Lab Test Parameter")
+
+@admin_bp.route('/lab-templates/delete/<int:id>', methods=['POST'])
+def delete_lab_template(id):
+    template = LabTestTemplate.query.get_or_404(id)
+    db.session.delete(template)
+    db.session.commit()
+    AuditService.log_action(current_user.id, f"Deleted Lab Test Template ID: {id}", request.remote_addr)
+    flash("Test template deleted successfully!", 'success')
+    return redirect(url_for('admin.lab_templates'))
+
+# ----------------------------------------------------
+# LAB PACKAGES CRUD
+# ----------------------------------------------------
+
+@admin_bp.route('/lab-packages')
+def lab_packages():
+    packages = LabPackage.query.filter_by(hospital_id=current_user.hospital_id).order_by(LabPackage.name).all()
+    return render_template('admin/lab_packages.html', packages=packages)
+
+@admin_bp.route('/lab-packages/add', methods=['GET', 'POST'])
+def add_lab_package():
+    form = LabPackageForm()
+    templates_list = LabTestTemplate.query.filter_by(hospital_id=current_user.hospital_id).order_by(LabTestTemplate.test_name).all()
+    form.templates.choices = [(t.id, f"{t.test_name} ({t.test_category})") for t in templates_list]
+
+    if form.validate_on_submit():
+        package = LabPackage(
+            hospital_id=current_user.hospital_id,
+            name=form.name.data.strip(),
+            description=form.description.data.strip() if form.description.data else None,
+            cost=form.cost.data
+        )
+        selected_template_ids = form.templates.data
+        selected_templates = LabTestTemplate.query.filter(LabTestTemplate.id.in_(selected_template_ids)).all()
+        package.templates = selected_templates
+
+        db.session.add(package)
+        db.session.commit()
+
+        AuditService.log_action(current_user.id, f"Created Lab Package: {package.name}", request.remote_addr)
+        flash(f"Lab Package '{package.name}' added successfully!", 'success')
+        return redirect(url_for('admin.lab_packages'))
+
+    return render_template('admin/lab_package_form.html', form=form, title="Add Laboratory Package")
+
+@admin_bp.route('/lab-packages/edit/<int:id>', methods=['GET', 'POST'])
+def edit_lab_package(id):
+    package = LabPackage.query.get_or_404(id)
+    form = LabPackageForm(obj=package)
+
+    templates_list = LabTestTemplate.query.filter_by(hospital_id=current_user.hospital_id).order_by(LabTestTemplate.test_name).all()
+    form.templates.choices = [(t.id, f"{t.test_name} ({t.test_category})") for t in templates_list]
+
+    if request.method == 'GET':
+        form.templates.data = [t.id for t in package.templates]
+
+    if form.validate_on_submit():
+        package.name = form.name.data.strip()
+        package.description = form.description.data.strip() if form.description.data else None
+        package.cost = form.cost.data
+
+        selected_template_ids = form.templates.data
+        selected_templates = LabTestTemplate.query.filter(LabTestTemplate.id.in_(selected_template_ids)).all()
+        package.templates = selected_templates
+
+        db.session.commit()
+
+        AuditService.log_action(current_user.id, f"Updated Lab Package ID: {package.id}", request.remote_addr)
+        flash(f"Lab Package '{package.name}' updated successfully!", 'success')
+        return redirect(url_for('admin.lab_packages'))
+
+    return render_template('admin/lab_package_form.html', form=form, title="Edit Laboratory Package")
+
+@admin_bp.route('/lab-packages/delete/<int:id>', methods=['POST'])
+def delete_lab_package(id):
+    package = LabPackage.query.get_or_404(id)
+    db.session.delete(package)
+    db.session.commit()
+    AuditService.log_action(current_user.id, f"Deleted Lab Package ID: {id}", request.remote_addr)
+    flash("Lab package deleted successfully!", 'success')
+    return redirect(url_for('admin.lab_packages'))
+
+# ----------------------------------------------------
+# REPORTS
+# ----------------------------------------------------
+
+@admin_bp.route('/reports')
+def reports():
+    return render_template('admin/reports.html')
+
