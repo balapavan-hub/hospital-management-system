@@ -4,6 +4,10 @@ from app.models.user import Doctor
 
 main_bp = Blueprint('main', __name__)
 
+@main_bp.route('/login')
+def login_redirect():
+    return redirect(url_for('auth.login'))
+
 @main_bp.route('/')
 @main_bp.route('/index')
 def index():
