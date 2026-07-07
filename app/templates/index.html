@@ -534,8 +534,189 @@
             to { transform: scaleX(1); }
         }
 
-        @keyframes wordFadeIn {
-            to { opacity: 1; transform: translateY(0); }
+        /* Healthcare Team Tagline and Illustration Styles */
+        .tagline-heading {
+            font-size: 1.85rem;
+            font-weight: 800;
+            line-height: 1.25;
+            letter-spacing: -0.75px;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .tagline-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 0;
+        }
+
+        .fade-up-animation {
+            opacity: 0;
+            transform: translateY(15px);
+            animation: wordFadeIn 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .fade-in-delay-animation {
+            opacity: 0;
+            animation: fadeInSimple 0.8s 0.6s ease forwards;
+        }
+
+        .team-illustration-wrapper {
+            position: relative;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1rem;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 310px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .team-illustration-wrapper:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .tech-bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .tech-grid {
+            width: 100%;
+            height: 100%;
+            background-size: 20px 20px;
+            background-image: 
+                linear-gradient(to right, rgba(13, 110, 253, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(13, 110, 253, 0.1) 1px, transparent 1px);
+        }
+
+        .floating-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: floatParticle 8s infinite ease-in-out;
+        }
+
+        .p1 { top: 15%; left: 10%; animation-delay: 0s; }
+        .p2 { top: 75%; left: 85%; animation-delay: 2s; }
+        .p3 { top: 40%; left: 90%; animation-delay: 4s; }
+
+        .floating-icon {
+            position: absolute;
+            color: var(--primary-color);
+            opacity: 0.4;
+            font-size: 1.1rem;
+            animation: floatIcon 10s infinite ease-in-out;
+        }
+
+        .fi1 { top: 20%; left: 80%; animation-delay: 1s; }
+        .fi2 { top: 70%; left: 15%; animation-delay: 3s; }
+        .fi3 { top: 45%; left: 5%; animation-delay: 5s; }
+
+        .team-image-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+
+        .team-illustration-wrapper:hover .team-image-container {
+            transform: translateY(-8px);
+        }
+
+        .team-image {
+            max-width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 16px rgba(13, 110, 253, 0.1));
+            animation: gentleBreathing 5s infinite ease-in-out;
+        }
+
+        /* Micro-animations: tablet glow, stethoscope shine */
+        .micro-glow {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(13, 110, 253, 0.4) 0%, transparent 70%);
+            mix-blend-mode: screen;
+            pointer-events: none;
+            opacity: 0.7;
+            animation: devicePulse 3s infinite ease-in-out;
+        }
+
+        .tablet-glow {
+            bottom: 30%;
+            right: 15%;
+            background: radial-gradient(circle, rgba(13, 148, 136, 0.5) 0%, transparent 70%);
+        }
+
+        .clipboard-glow {
+            bottom: 35%;
+            left: 20%;
+            animation-delay: 1.5s;
+        }
+
+        .stethoscope-shine {
+            position: absolute;
+            top: 25%;
+            left: 55%;
+            width: 6px;
+            height: 6px;
+            background-color: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #fff, 0 0 20px var(--primary-color);
+            opacity: 0.8;
+            animation: stethShine 4s infinite ease-in-out;
+        }
+
+        /* Micro-animation Keyframes */
+        @keyframes fadeInSimple {
+            to { opacity: 1; }
+        }
+
+        @keyframes floatParticle {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-15px) translateX(8px); opacity: 0.8; }
+        }
+
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
+            50% { transform: translateY(-10px) rotate(15deg); opacity: 0.5; }
+        }
+
+        @keyframes gentleBreathing {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-4px) scale(1.02); }
+        }
+
+        @keyframes devicePulse {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.3); opacity: 0.8; }
+        }
+
+        @keyframes stethShine {
+            0%, 80%, 100% { transform: scale(1); opacity: 0.4; box-shadow: 0 0 5px #fff; }
+            90% { transform: scale(1.8); opacity: 1; box-shadow: 0 0 15px #fff, 0 0 25px var(--primary-color); }
         }
     </style>
 </head>
@@ -606,29 +787,29 @@
                     {% endif %}
                 {% endwith %}
 
-                <div class="row align-items-center g-5">
-                    <div class="col-lg-6 text-start">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-4 text-start">
                         <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill mb-3 fw-bold">
                             <i class="bi bi-shield-check me-1"></i> National Health Stack Integrated
                         </div>
-                        <h1 class="hero-title mb-4 animated-heading">
+                        <h1 class="hero-title mb-4 animated-heading" style="font-size: 2.25rem;">
                             <span>One Platform.</span><br>
                             <span>Powering</span>
                             <span class="underline-highlight">Healthcare</span>
                             <span>Across</span>
                             <span class="underline-highlight">India.</span>
                         </h1>
-                        <p class="hero-subtitle mb-4 text-secondary leading-relaxed">
+                        <p class="hero-subtitle mb-4 text-secondary leading-relaxed" style="font-size: 0.85rem;">
                             MediConnect India enables hospitals, clinics, laboratories, pharmacies and patients to collaborate through one secure, unified digital healthcare ecosystem. Streamline operations and secure patient data transfers nationwide.
                         </p>
-                        <div class="d-flex flex-wrap gap-3">
-                            <a href="{{ url_for('auth.register_hospital') }}" class="btn btn-primary btn-lg px-4 py-3 rounded-3 shadow-sm fw-semibold btn-ripple">Get Started</a>
-                            <a href="#stakeholders" class="btn btn-outline-secondary btn-lg px-4 py-3 rounded-3 fw-semibold btn-ripple">Explore Nodes</a>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('auth.register_hospital') }}" class="btn btn-primary btn-md px-3 py-2 rounded-3 shadow-sm fw-semibold btn-ripple">Get Started</a>
+                            <a href="#stakeholders" class="btn btn-outline-secondary btn-md px-3 py-2 rounded-3 fw-semibold btn-ripple">Explore Nodes</a>
                         </div>
                     </div>
                     
                     <!-- Premium Interactive Connected Node Network Graphic -->
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
                         <div class="network-graphic-wrapper">
                             <div class="network-graphic">
                                 <!-- Connecting animated SVG paths -->
@@ -696,6 +877,39 @@
                                         <div class="char-status">OPD Synced</div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Healthcare Team Illustration & Tagline -->
+                    <div class="col-lg-4 text-center text-lg-start">
+                        <div class="tagline-wrapper mb-3">
+                            <h2 class="tagline-heading fade-up-animation">
+                                Your Health.<br>
+                                <span class="text-primary">Our Responsibility.</span>
+                            </h2>
+                            <p class="tagline-subtitle fade-in-delay-animation">
+                                Empowering hospitals across India with one secure healthcare platform.
+                            </p>
+                        </div>
+                        <div class="team-illustration-wrapper">
+                            <!-- Subtle healthcare technology background -->
+                            <div class="tech-bg-overlay">
+                                <div class="tech-grid"></div>
+                                <div class="floating-particle p1"></div>
+                                <div class="floating-particle p2"></div>
+                                <div class="floating-particle p3"></div>
+                                <div class="floating-icon fi1"><i class="bi bi-heart-pulse-fill"></i></div>
+                                <div class="floating-icon fi2"><i class="bi bi-shield-fill-check"></i></div>
+                                <div class="floating-icon fi3"><i class="bi bi-activity"></i></div>
+                            </div>
+                            <!-- Character container -->
+                            <div class="team-image-container">
+                                <img src="{{ url_for('static', filename='images/healthcare_team.png') }}" alt="Healthcare Team illustration" class="team-image">
+                                <!-- Micro-animations overlays -->
+                                <div class="stethoscope-shine"></div>
+                                <div class="micro-glow tablet-glow"></div>
+                                <div class="micro-glow clipboard-glow"></div>
                             </div>
                         </div>
                     </div>
@@ -1102,13 +1316,49 @@
 
             // 5. Interactive SVG Connection Lines Glow & Mouse Move Interaction
             const networkGraphic = document.querySelector('.network-graphic');
-            if (networkGraphic) {
-                networkGraphic.addEventListener('mousemove', (e) => {
-                    const rect = networkGraphic.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
+            
+            function drawConnections() {
+                if (!networkGraphic) return;
+                const center = networkGraphic.querySelector('.node-center');
+                const nodes = networkGraphic.querySelectorAll('.network-node:not(.node-center)');
+                
+                const cRect = center.getBoundingClientRect();
+                const pRect = networkGraphic.getBoundingClientRect();
+                const cx = cRect.left - pRect.left + cRect.width / 2;
+                const cy = cRect.top - pRect.top + cRect.height / 2;
+                
+                const flows = {
+                    'node-top-left': document.getElementById('flow-top-left'),
+                    'node-top-right': document.getElementById('flow-top-right'),
+                    'node-bottom-left': document.getElementById('flow-bottom-left'),
+                    'node-bottom-right': document.getElementById('flow-bottom-right'),
+                    'node-mid-left': document.getElementById('flow-mid-left'),
+                    'node-mid-right': document.getElementById('flow-mid-right')
+                };
+                
+                nodes.forEach(node => {
+                    let key = '';
+                    if (node.classList.contains('node-top-left')) key = 'node-top-left';
+                    else if (node.classList.contains('node-top-right')) key = 'node-top-right';
+                    else if (node.classList.contains('node-bottom-left')) key = 'node-bottom-left';
+                    else if (node.classList.contains('node-bottom-right')) key = 'node-bottom-right';
+                    else if (node.classList.contains('node-mid-left')) key = 'node-mid-left';
+                    else if (node.classList.contains('node-mid-right')) key = 'node-mid-right';
                     
-                    // Change paths style based on cursor distance
+                    if (key && flows[key]) {
+                        const nRect = node.getBoundingClientRect();
+                        const nx = nRect.left - pRect.left + nRect.width / 2;
+                        const ny = nRect.top - pRect.top + nRect.height / 2;
+                        flows[key].setAttribute('d', `M ${nx},${ny} L ${cx},${cy}`);
+                    }
+                });
+            }
+
+            if (networkGraphic) {
+                setTimeout(drawConnections, 150);
+                window.addEventListener('resize', drawConnections);
+
+                networkGraphic.addEventListener('mousemove', (e) => {
                     document.querySelectorAll('.line-flow').forEach(path => {
                         path.style.stroke = 'var(--primary-color)';
                         path.style.strokeWidth = '3';
