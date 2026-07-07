@@ -316,7 +316,7 @@
                                     <li><a class="dropdown-item py-2" href="{{ url_for('patient.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>My Dashboard</a></li>
                                 {% elif current_user.role == 'Doctor' %}
                                     <li><a class="dropdown-item py-2" href="{{ url_for('doctor.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
-                                {% elif current_user.role == 'Admin' %}
+                                {% elif current_user.role == 'HospitalAdmin' %}
                                     <li><a class="dropdown-item py-2" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Admin Panel</a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
@@ -325,8 +325,9 @@
                         </div>
                     {% else %}
                         <!-- Public Navbar Login/Register Buttons -->
-                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary px-4 rounded-pill">Login</a>
-                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary px-4 rounded-pill">Register</a>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary px-3 rounded-pill me-1">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary px-3 rounded-pill me-1">Register Patient</a>
+                        <a href="{{ url_for('auth.register_hospital') }}" class="btn btn-primary px-3 rounded-pill">Register Hospital</a>
                     {% endif %}
                 </div>
             </nav>

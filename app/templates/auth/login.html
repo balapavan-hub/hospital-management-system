@@ -51,23 +51,13 @@
                         {{ form.submit(class="btn btn-primary btn-lg rounded-pill py-2 fw-bold shadow-sm") }}
                     </div>
 
-                    <div class="text-center text-muted small">
+                    <div class="text-center text-muted small mb-2">
                         Don't have an account? <a href="{{ url_for('auth.register') }}" class="text-primary text-decoration-none fw-semibold">Register as Patient</a>
                     </div>
+                    <div class="text-center text-muted small">
+                        Are you a healthcare facility? <a href="{{ url_for('auth.register_hospital') }}" class="text-primary text-decoration-none fw-semibold">Register Hospital Workspace</a>
+                    </div>
                 </form>
-            </div>
-        </div>
-        
-        <!-- Dummy accounts notice for test ease -->
-        <div class="card mt-4 border-0 bg-info-subtle border-start border-info border-3 rounded-3 shadow-sm">
-            <div class="card-body p-3 small text-info-emphasis">
-                <h6 class="fw-bold"><i class="bi bi-info-circle-fill me-2"></i>Mock accounts for testing:</h6>
-                <ul class="mb-0 ps-3">
-                    <li><strong>Admin:</strong> <code>admin@medicare.com</code> / password: <code>admin123</code></li>
-                    <li><strong>Doctor:</strong> <code>doctor@medicare.com</code> / password: <code>doctor123</code></li>
-                    <li><strong>Receptionist:</strong> <code>receptionist@medicare.com</code> / password: <code>receptionist123</code></li>
-                    <li><strong>Patient:</strong> <code>patient@medicare.com</code> / password: <code>patient123</code></li>
-                </ul>
             </div>
         </div>
     </div>
