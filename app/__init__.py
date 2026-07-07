@@ -22,6 +22,23 @@ def create_app(config_class=Config):
     db.init_app(app)
     csrf.init_app(app)
     
+    # Auto-create tables and seed Super Admin on startup for seamless serverless deployment
+    with app.app_context():
+        try:
+            db.create_all()
+            admin_user = User.query.filter_by(role='SuperAdmin').first()
+            if not admin_user:
+                from app.models.setting import SystemSetting
+                setting = SystemSetting(setting_key='hospital_name', setting_value='MediConnect India')
+                db.session.add(setting)
+                super_admin = User(email="admin@mediconnect.com", role="SuperAdmin")
+                super_admin.set_password("admin123")
+                db.session.add(super_admin)
+                db.session.commit()
+                print("Database tables and Super Admin successfully initialized.")
+        except Exception as e:
+            print("Database auto-initialization error:", e)
+            
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
