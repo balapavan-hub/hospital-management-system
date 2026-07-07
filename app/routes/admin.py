@@ -76,8 +76,17 @@ def dashboard():
 
 @admin_bp.route('/doctors')
 def doctors():
-    docs = Doctor.query.filter_by(hospital_id=current_user.hospital_id).all()
-    return render_template('admin/doctors.html', doctors=docs)
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+    query = Doctor.query.filter_by(hospital_id=current_user.hospital_id)
+    if search:
+        query = query.filter(
+            (Doctor.first_name.ilike(f'%{search}%')) |
+            (Doctor.last_name.ilike(f'%{search}%')) |
+            (Doctor.specialization.ilike(f'%{search}%'))
+        )
+    pagination = query.order_by(Doctor.first_name.asc()).paginate(page=page, per_page=10)
+    return render_template('admin/doctors.html', pagination=pagination, search=search)
 
 @admin_bp.route('/doctors/add', methods=['GET', 'POST'])
 def add_doctor():
@@ -171,8 +180,16 @@ def delete_doctor(id):
 # -- RECEPTIONISTS --
 @admin_bp.route('/receptionists')
 def receptionists():
-    recs = Receptionist.query.filter_by(hospital_id=current_user.hospital_id).all()
-    return render_template('admin/receptionists.html', receptionists=recs)
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+    query = Receptionist.query.filter_by(hospital_id=current_user.hospital_id)
+    if search:
+        query = query.filter(
+            (Receptionist.first_name.ilike(f'%{search}%')) |
+            (Receptionist.last_name.ilike(f'%{search}%'))
+        )
+    pagination = query.order_by(Receptionist.first_name.asc()).paginate(page=page, per_page=10)
+    return render_template('admin/receptionists.html', pagination=pagination, search=search)
 
 @admin_bp.route('/receptionists/add', methods=['GET', 'POST'])
 def add_receptionist():
@@ -245,8 +262,16 @@ def delete_receptionist(id):
 # -- LAB TECHNICIANS --
 @admin_bp.route('/lab-technicians')
 def lab_technicians():
-    techs = LabTechnician.query.filter_by(hospital_id=current_user.hospital_id).all()
-    return render_template('admin/lab_technicians.html', lab_technicians=techs)
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+    query = LabTechnician.query.filter_by(hospital_id=current_user.hospital_id)
+    if search:
+        query = query.filter(
+            (LabTechnician.first_name.ilike(f'%{search}%')) |
+            (LabTechnician.last_name.ilike(f'%{search}%'))
+        )
+    pagination = query.order_by(LabTechnician.first_name.asc()).paginate(page=page, per_page=10)
+    return render_template('admin/lab_technicians.html', pagination=pagination, search=search)
 
 @admin_bp.route('/lab-technicians/add', methods=['GET', 'POST'])
 def add_lab_technician():
@@ -695,17 +720,32 @@ def export_reports(report_type, format_type):
         return redirect(url_for('admin.dashboard'))
         
     if format_type == 'excel':
-        return ReportService.export_excel(data, filename, sheet_name)
+        import io
+        excel_data = ReportService.export_excel(data, sheet_name)
+        return send_file(
+            io.BytesIO(excel_data),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f"{filename}.xlsx"
+        )
     elif format_type == 'csv':
-        return ReportService.export_csv(data, filename)
+        import io
+        csv_data = ReportService.export_csv(data)
+        return send_file(
+            io.BytesIO(csv_data),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f"{filename}.csv"
+        )
     else:
         flash("Unsupported export format.", "danger")
         return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/audit-logs')
 def audit_logs():
-    logs = AuditLog.query.filter_by(hospital_id=current_user.hospital_id).order_by(AuditLog.created_at.desc()).all()
-    return render_template('admin/audit_logs.html', logs=logs)
+    page = request.args.get('page', 1, type=int)
+    pagination = AuditLog.query.filter_by(hospital_id=current_user.hospital_id).order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=20)
+    return render_template('admin/audit_logs.html', pagination=pagination)
 
 # ----------------------------------------------------
 # BILLING RECORDS
